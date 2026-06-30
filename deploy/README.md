@@ -75,14 +75,33 @@ curl -s localhost:3000 | head -c 200   # should return NIVAR HTML
 sudo cp /var/www/nivar/deploy/nginx/nivar.fun.conf /etc/nginx/sites-available/nivar.fun
 sudo ln -sf /etc/nginx/sites-available/nivar.fun /etc/nginx/sites-enabled/nivar.fun
 sudo rm -f /etc/nginx/sites-enabled/default        # if the default site is in the way
-sudo nginx -t && sudo systemctl reload nginx
 
-# TLS (after DNS from step 2 resolves):
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d nivar.fun -d www.nivar.fun
+# Make sure nginx is actually RUNNING (reload only works on an active service):
+sudo nginx -t && sudo systemctl enable --now nginx && sudo systemctl reload nginx
+sudo systemctl status nginx --no-pager             # must be "active (running)"
 ```
 
-Open **https://nivar.fun** — the game should load. ✅ (Web deploy done.)
+**If nginx won't start** ("not active" / fails): something else is holding port 80.
+
+```bash
+sudo ss -tlnp | grep -E ':80|:443'                 # who owns the port?
+sudo systemctl disable --now apache2 2>/dev/null    # common culprit
+sudo systemctl restart nginx
+```
+
+**TLS — only after (a) nginx is running and (b) DNS resolves to this server:**
+
+```bash
+dig +short nivar.fun           # MUST print 187.77.120.136 first
+curl -I http://nivar.fun       # nginx should answer (not connection refused)
+
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d nivar.fun -d www.nivar.fun
+# "Service busy; retry later" = transient Let's Encrypt error → wait 2–5 min and re-run.
+# Still stuck? add -v --debug-challenges, or use webroot: --webroot -w /var/www/nivar/apps/web
+```
+
+Open **http://nivar.fun** (works once nginx is up) then **https://nivar.fun** after the cert. ✅
 
 ---
 
