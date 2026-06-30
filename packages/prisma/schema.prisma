@@ -1,0 +1,175 @@
+// NIVAR — Prisma schema (handoff §8, extended for anti-cheat + audit).
+// The server is the only writer of resources, $NIVAR, power, levels and clears.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  wallet    String   @unique
+  createdAt DateTime @default(now())
+
+  base      Base?
+  heroes    Hero[]
+  buildings Building[]
+  research  Research[]
+  clears    StageClear[]
+  ledger    LedgerEntry[]
+  quest     QuestState?
+  daily     DailyState[]
+  idem      IdempotencyKey[]
+  rolls     GachaRoll[]
+}
+
+model Base {
+  userId     String   @id
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rigLevel   Int      @default(3) // "furnace" in the prototype
+  warmth     Float    @default(38)
+  pop        Float    @default(8)
+  popCap     Int      @default(12)
+  food       Float    @default(24500)
+  wood       Float    @default(23500)
+  coal       Float    @default(8200)
+  iron       Float    @default(4100)
+  crystal    Float    @default(1258) // $NIVAR (off-chain balance, backed by ledger)
+  lastTickAt DateTime @default(now())
+  jobTarget  String? // building key or "furnace"
+  jobKind    String? // "upgrade" | "furnace"
+  jobEndsAt  DateTime?
+  jobTotalMs Int?
+  // one-time / cooldown shop flags
+  genesisClaimed Boolean   @default(false)
+  airdropAt      DateTime?
+}
+
+model Building {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key    String // cookhouse, ironmine, mine, sawmill, hunters, shelter1..3, clinic, explorers
+  level  Int
+
+  @@unique([userId, key])
+}
+
+model Hero {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  heroId String // whale, dev, kol, degen, ...
+  level  Int    @default(1)
+  shards Int    @default(0)
+  slot   Int? // 0..4 if equipped, null if benched
+
+  @@unique([userId, heroId])
+}
+
+model Research {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  techId String
+  level  Int    @default(0)
+
+  @@unique([userId, techId])
+}
+
+model StageClear {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stageId       String
+  cleared       Boolean   @default(false)
+  cooldownUntil DateTime?
+
+  @@unique([userId, stageId])
+}
+
+model QuestState {
+  userId   String   @id
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  summons  Int      @default(0)
+  raidWins Int      @default(0)
+  upgrades Int      @default(0)
+  claimed  String[] // ["main:m1", ...]
+}
+
+model DailyState {
+  id           String  @id @default(cuid())
+  userId       String
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         String // UTC yyyy-mm-dd
+  summons      Int     @default(0)
+  raidWins     Int     @default(0)
+  upgrades     Int     @default(0)
+  airdrop      Boolean @default(false)
+  chestClaimed Int[] // [0,1,2]
+
+  @@unique([userId, date])
+}
+
+model LedgerEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Float // +/- $NIVAR (or resource)
+  currency  String // NIVAR | food | wood | coal | iron
+  reason    String // summon, raid_reward, quest_claim, airdrop, wallet_claim, ...
+  refId     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// Idempotency keys for rewardful/mutating routes (§9).
+model IdempotencyKey {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  route     String
+  response  Json?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, key])
+}
+
+/// Provably-fair gacha audit log (§10): every roll is reproducible from the
+/// committed server seed + client seed + nonce.
+model GachaRoll {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverSeedHash String
+  serverSeed     String? // revealed after rotation
+  clientSeed     String
+  nonce          Int
+  rarityRoll     Float
+  pickRoll       Float
+  heroId         String
+  rarity         String
+  isNew          Boolean
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// Sign-In With Solana nonces.
+model AuthNonce {
+  id        String   @id @default(cuid())
+  wallet    String
+  nonce     String   @unique
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  @@index([wallet])
+}

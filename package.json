@@ -1,0 +1,22 @@
+{
+  "name": "nivar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NIVAR — crypto-winter survival GameFi on Solana. Monorepo (web + api + shared config).",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:config": "npm run build --workspace @nivar/config",
+    "dev:web": "npm run dev --workspace @nivar/web",
+    "build:web": "npm run build:config && npm run build --workspace @nivar/web",
+    "dev:api": "npm run dev --workspace @nivar/api",
+    "build:api": "npm run build:config && npm run build --workspace @nivar/api",
+    "prisma:generate": "npm run generate --workspace @nivar/prisma",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

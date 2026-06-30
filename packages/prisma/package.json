@@ -1,0 +1,26 @@
+{
+  "name": "@nivar/prisma",
+  "version": "0.1.0",
+  "description": "NIVAR Prisma schema + client.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "studio": "prisma studio",
+    "format": "prisma format",
+    "validate": "prisma validate"
+  },
+  "dependencies": {
+    "@prisma/client": "5.20.0"
+  },
+  "devDependencies": {
+    "prisma": "5.20.0"
+  },
+  "license": "UNLICENSED"
+}
