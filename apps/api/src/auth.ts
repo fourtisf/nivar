@@ -2,9 +2,26 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { ApiError, Errors } from "./lib/errors.js";
 import type { Store } from "./store.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 const NONCE_TTL_MS = 5 * 60 * 1000;
 const TOKEN_TTL_S = 7 * 24 * 3600;
+const WEAK_SECRETS = new Set(["dev-secret-change-me", "change-me-in-production", ""]);
+
+/**
+ * Resolve the JWT signing secret, FAIL-CLOSED in production. A missing or weak
+ * secret in prod throws at startup rather than silently letting anyone forge
+ * tokens with a known default. Dev keeps a fallback for convenience.
+ */
+function resolveJwtSecret(): string {
+  const s = process.env.JWT_SECRET ?? "";
+  const strong = s.length >= 16 && !WEAK_SECRETS.has(s);
+  if (strong) return s;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be set to a strong (>=16 char) value in production");
+  }
+  return "dev-secret-change-me";
+}
+
+const JWT_SECRET = resolveJwtSecret();
 
 /* ---------------- JWT (HS256, dependency-free) ---------------- */
 const b64url = (buf: Buffer | string) => Buffer.from(buf).toString("base64url");

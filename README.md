@@ -89,6 +89,14 @@ hero grid, summon prices). Re-check after any engine change:
 npm run build:web && npm run start --workspace @nivar/web   # then compare to prototype/nivar.html
 ```
 
+## Deploy
+
+VPS deploy (PM2 + Nginx, domain `nivar.fun`) is documented step-by-step in
+[`deploy/README.md`](deploy/README.md), with `deploy/deploy.sh`,
+`deploy/ecosystem.config.cjs` (PM2) and `deploy/nginx/nivar.fun.conf`. The **web app**
+is the playable game and deploys standalone (no DB); the api is optional preview infra
+until it's wired to the frontend + given a Prisma store.
+
 ## Architecture notes
 
 - **Server-authoritative (anti-cheat).** The client renders; the server owns every state

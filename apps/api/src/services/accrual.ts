@@ -1,6 +1,6 @@
 import * as CFG from "@nivar/config";
 import { GameState, bonuses, buildingLevel, shelterPopCap, utcDay } from "../state.js";
-import { addRes, LedgerDraft } from "./economy.js";
+import { addRes, LedgerDraft, nivarLedger } from "./economy.js";
 import { finishDueJob } from "./building.js";
 
 /**
@@ -33,8 +33,14 @@ export function runAccrual(s: GameState, now: number): LedgerDraft[] {
         addRes(s, def.res, CFG.prodPerSec(def, buildingLevel(s, def.id), s.warmth, B) * dt);
       }
     }
-    // $NIVAR trickle from the Alpha Lab (explorers)
-    s.crystal += CFG.ECON.CRYSTAL_TRICKLE_PER_LAB * buildingLevel(s, "explorers") * dt * B.token;
+    // $NIVAR trickle from the Alpha Lab (explorers). Ledger it so the audit
+    // log reconciles with the balance (one row per accrual; production may
+    // batch/threshold these). Keeps the double-entry invariant (§6/§12).
+    const trickle = CFG.ECON.CRYSTAL_TRICKLE_PER_LAB * buildingLevel(s, "explorers") * dt * B.token;
+    if (trickle > 0) {
+      s.crystal += trickle;
+      ledger.push(nivarLedger(trickle, "idle_yield"));
+    }
     // Crew growth toward capacity
     s.popCap = shelterPopCap(s);
     if (s.pop < s.popCap) s.pop = Math.min(s.popCap, s.pop + dt * CFG.ECON.POP_GROWTH_RATE);

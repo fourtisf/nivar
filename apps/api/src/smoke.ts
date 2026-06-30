@@ -3,10 +3,14 @@
 process.env.NIVAR_DEV_AUTH = "1";
 
 import assert from "node:assert";
+import { createHash } from "node:crypto";
 import { buildServer } from "./server.js";
+import { InMemoryStore } from "./store.js";
 import { devSignature } from "./auth.js";
+import { INITIAL_BASE } from "@nivar/config";
 
-const app = buildServer();
+const store = new InMemoryStore();
+const app = buildServer(store);
 const WALLET = "TestWa11etPubkey1111111111111111111111111111";
 let token = "";
 let pass = 0;
@@ -106,6 +110,13 @@ async function main() {
   // --- flagged endpoints honestly report not-ready ---
   const claim = await req("POST", "/wallet/claim", { amount: 10 });
   ok("wallet/claim returns 501 (treasury not configured)", claim.status === 501);
+
+  // --- ledger invariant: every $NIVAR change is recorded (audit reconciles) ---
+  const final = (await req("GET", "/state")).json.state;
+  const userId = `user_${createHash("sha256").update(WALLET).digest("hex").slice(0, 32)}`;
+  const ledgerSum = store.nivarLedgerSum(userId);
+  const expectedDelta = final.resources.crystal - INITIAL_BASE.crystal;
+  ok("ledger reconciles with $NIVAR balance", Math.abs(ledgerSum - expectedDelta) < 1e-6);
 
   console.log(`\n${pass} checks passed ✓\n`);
   await app.close();

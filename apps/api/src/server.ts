@@ -63,7 +63,17 @@ export function buildServer(store: Store = new InMemoryStore()) {
       }
       const s = await store.getState(userId, now);
       const accrualLedger = runAccrual(s, now);
-      const out = fn(s, now) ?? {};
+      let out: MutationOut;
+      try {
+        out = fn(s, now) ?? {};
+      } catch (e) {
+        // Idle accrual already advanced the state legitimately; commit it + its
+        // ledger so the audit log stays reconciled, then surface the error. The
+        // mutation itself did not apply — services validate before mutating.
+        await store.saveState(s);
+        if (accrualLedger.length) await store.appendLedger(userId, accrualLedger);
+        throw e;
+      }
       await store.saveState(s);
       const ledger = [...accrualLedger, ...(out.ledger ?? [])];
       if (ledger.length) await store.appendLedger(userId, ledger);
@@ -130,7 +140,7 @@ export function buildServer(store: Store = new InMemoryStore()) {
       { idempotent: true },
     ),
   );
-  app.post("/research", async (req) => runGame(req, (s) => void research(s, str(body(req).techId))));
+  app.post("/research", async (req) => runGame(req, (s) => ({ ledger: research(s, str(body(req).techId)) })));
 
   /* ---------------- quests ---------------- */
   app.post("/quest/claim", async (req) =>

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { freshState, GameState } from "./state.js";
 import type { LedgerDraft } from "./services/economy.js";
 import type { PullRecord } from "./services/gacha.js";
@@ -60,6 +61,11 @@ export class InMemoryStore implements Store {
     this.rolls.set(userId, arr);
   }
 
+  /** Test/debug: sum of all $NIVAR ledger deltas for a user. */
+  nivarLedgerSum(userId: string): number {
+    return (this.ledger.get(userId) ?? []).filter((e) => e.currency === "NIVAR").reduce((a, e) => a + e.delta, 0);
+  }
+
   async getIdem(userId: string, key: string): Promise<unknown | undefined> {
     return this.idem.get(`${userId}:${key}`);
   }
@@ -82,7 +88,9 @@ export class InMemoryStore implements Store {
   async userIdForWallet(wallet: string): Promise<string> {
     let id = this.wallets.get(wallet);
     if (!id) {
-      id = `user_${wallet.slice(0, 12)}`;
+      // Derive a collision-resistant id from the FULL wallet (never a prefix —
+      // truncation would let distinct wallets share a userId / account).
+      id = `user_${createHash("sha256").update(wallet).digest("hex").slice(0, 32)}`;
       this.wallets.set(wallet, id);
     }
     return id;
