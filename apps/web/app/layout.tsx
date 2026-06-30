@@ -4,6 +4,21 @@ import "../components/Game/game.css";
 export const metadata: Metadata = {
   title: "NIVAR — Survive the Winter",
   description: "Crypto-winter survival GameFi on Solana. Build your base, summon CT legends, raid the bear, stack $NIVAR.",
+  metadataBase: new URL("https://nivar.fun"),
+  openGraph: {
+    title: "NIVAR — Survive the Winter",
+    description: "Crypto-winter survival GameFi on Solana. Build, summon, raid the bear, stack $NIVAR.",
+    url: "https://nivar.fun",
+    siteName: "NIVAR",
+    images: [{ url: "/brand/nivar-hero.png", width: 1500, height: 560 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NIVAR — Survive the Winter",
+    description: "Crypto-winter survival GameFi on Solana. Build, summon, raid the bear, stack $NIVAR.",
+    images: ["/brand/nivar-hero.png"],
+  },
 };
 
 // Mirrors the prototype's <meta name="viewport" ...> exactly.

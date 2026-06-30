@@ -1,0 +1,47 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{margin:0}
+body{width:1400px;height:460px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 150% at 50% 12%,#10314c 0%,#0a1d30 50%,#06101c 100%)}
+body.transparent{background:transparent}
+</style></head><body>
+<svg width="1320" height="380" viewBox="0 0 1320 380">
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="0.25" y2="1"><stop offset="0" stop-color="#b6ffd6"/><stop offset=".55" stop-color="#56e0ff"/><stop offset="1" stop-color="#37b6ff"/></linearGradient>
+    <radialGradient id="e" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#ffe7a0"/><stop offset=".5" stop-color="#ff9b3d"/><stop offset="1" stop-color="#ff5a1a"/></radialGradient>
+    <linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#173d60"/><stop offset="1" stop-color="#0a1d30"/></linearGradient>
+    <linearGradient id="wm" x1="0" y1="13" x2="0" y2="140" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#dbe9f8"/><stop offset="1" stop-color="#9cc0e4"/></linearGradient>
+    <filter id="g" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="wmsh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#56e0ff" flood-opacity=".28"/></filter>
+  </defs>
+
+  <!-- ICON: Frostflake badge -->
+  <g transform="translate(20,76)">
+    <rect x="0" y="0" width="228" height="228" rx="52" fill="url(#p)" stroke="rgba(125,211,252,.45)" stroke-width="2.5"/>
+    <rect x="6" y="6" width="216" height="120" rx="46" fill="#ffffff" opacity=".05"/>
+    <g transform="translate(114,116) scale(1.62)" stroke="url(#f)" stroke-width="7" stroke-linecap="round" fill="none" filter="url(#g)">
+      <g id="a"><line x1="0" y1="0" x2="0" y2="-50"/><line x1="0" y1="-34" x2="-13" y2="-46"/><line x1="0" y1="-34" x2="13" y2="-46"/><line x1="0" y1="-20" x2="-10" y2="-29"/><line x1="0" y1="-20" x2="10" y2="-29"/></g>
+      <use href="#a" transform="rotate(60)"/><use href="#a" transform="rotate(120)"/><use href="#a" transform="rotate(180)"/><use href="#a" transform="rotate(240)"/><use href="#a" transform="rotate(300)"/>
+    </g>
+    <circle cx="114" cy="116" r="14" fill="url(#e)" filter="url(#g)"/>
+  </g>
+
+  <!-- WORDMARK: custom vector "NIVAR" (font-independent) -->
+  <g transform="translate(300,96)" fill="none" stroke="url(#wm)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" filter="url(#wmsh)">
+    <!-- N -->
+    <g transform="translate(0,0)"><path d="M13,140 L13,13 L83,140 L83,13"/></g>
+    <!-- I -->
+    <g transform="translate(112,0)"><path d="M13,13 L13,140"/></g>
+    <!-- V -->
+    <g transform="translate(158,0)"><path d="M13,13 L48,140 L83,13"/></g>
+    <!-- A -->
+    <g transform="translate(270,0)"><path d="M11,140 L48,13 L85,140 M24,96 L72,96"/></g>
+    <!-- R -->
+    <g transform="translate(382,0)"><path d="M13,140 L13,13 L52,13 C82,13 82,74 52,74 L13,74 M48,74 L84,140"/></g>
+  </g>
+  <!-- tagline rule + text -->
+  <g transform="translate(304,300)">
+    <rect x="2" y="-2" width="42" height="4" rx="2" fill="#7CFFB0"/>
+    <text x="56" y="4" font-family="'Liberation Sans',Arial,sans-serif" font-weight="700" font-size="22" letter-spacing="10" fill="#a9c2db">SURVIVE THE WINTER</text>
+  </g>
+</svg>
+</body></html>

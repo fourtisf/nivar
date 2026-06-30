@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="132" height="132" viewBox="0 0 132 132">
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aeffd0"/><stop offset="1" stop-color="#41c8ff"/></linearGradient>
+    <radialGradient id="e" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#ffe7a0"/><stop offset=".5" stop-color="#ff9b3d"/><stop offset="1" stop-color="#ff5a1a"/></radialGradient>
+    <linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16395a"/><stop offset="1" stop-color="#0a1d30"/></linearGradient>
+  </defs>
+  <rect x="6" y="6" width="120" height="120" rx="28" fill="url(#p)" stroke="rgba(125,211,252,.4)" stroke-width="1.5"/>
+  <g transform="translate(66,66)" stroke="url(#f)" stroke-width="7" stroke-linecap="round" fill="none">
+    <g id="a"><line x1="0" y1="0" x2="0" y2="-50"/><line x1="0" y1="-34" x2="-13" y2="-46"/><line x1="0" y1="-34" x2="13" y2="-46"/><line x1="0" y1="-20" x2="-10" y2="-29"/><line x1="0" y1="-20" x2="10" y2="-29"/></g>
+    <use href="#a" transform="rotate(60)"/><use href="#a" transform="rotate(120)"/><use href="#a" transform="rotate(180)"/><use href="#a" transform="rotate(240)"/><use href="#a" transform="rotate(300)"/>
+  </g>
+  <circle cx="66" cy="66" r="9" fill="url(#e)"/>
+</svg>
