@@ -39,30 +39,42 @@ export function runBattle(opts) {
     cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + "px"; cv.style.height = H + "px"; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
   fit();
 
+  const foeGlow = ({ s1: "#ff6b6b", s2: "#e0a060", s3: "#b06bff", s4: "#56e0ff", s5: "#7CFFB0", s6: "#ffce54" })[monster.id] || "#ff6b6b";
+  function shade(hex, f) { const n = parseInt(hex.slice(1), 16);
+    const r = Math.min(255, Math.round(((n >> 16) & 255) * f)), gg = Math.min(255, Math.round(((n >> 8) & 255) * f)), b = Math.min(255, Math.round((n & 255) * f));
+    return "#" + ((1 << 24) + (r << 16) + (gg << 8) + b).toString(16).slice(1); }
+
   /* ---------------- build units ---------------- */
   const units = [], shots = [], parts = [];
-  const bias = 1.45; // predetermined winner's stat multiplier
+  const bias = 1.5; // predetermined winner's stat multiplier
   const HPF = 2.6, ATKF = 0.14;
   const heroes = (squad.length ? squad : [{ e: "🫥", power: 40 }]);
+  // per-kind body palette (light top → dark bottom, stroke)
+  const PAL = {
+    hero: { l: "#9bffc6", d: "#2aa870", s: "#7CFFB0" },
+    crew: { l: "#72cfa2", d: "#22694d", s: "#57e0a0" },
+    boss: { l: shade(foeGlow, 1.28), d: shade(foeGlow, 0.55), s: foeGlow },
+    minion: { l: "#ff9d9d", d: "#a83232", s: "#ff6b6b" },
+  };
 
-  function mk(side, emoji, power, x, y, ranged, big) {
+  function mk(side, emoji, power, x, y, ranged, kind) {
     const boost = (side === "you") === win ? bias : 1;
+    const big = kind === "boss";
     const hp = Math.max(20, power * HPF * boost);
-    units.push({ side, e: emoji, r: big ? 26 : 17, hp, maxHp: hp, atk: Math.max(3, power * ATKF * boost),
-      range: ranged ? 118 : 30, speed: (ranged ? 34 : 48) + Math.random() * 8, cd: Math.random() * 0.6, cdMax: 0.85,
-      ranged, x, y, flash: 0, alive: true, big }); }
+    units.push({ side, e: emoji, r: big ? 34 : ranged ? 22 : 19, hp, maxHp: hp, atk: Math.max(3, power * ATKF * boost),
+      range: ranged ? 128 : 34, speed: (ranged ? 30 : 46) + Math.random() * 6, cd: Math.random() * 0.6, cdMax: ranged ? 0.9 : 0.7,
+      ranged, x, y, flash: 0, alive: true, big, kind, pal: PAL[kind], step: Math.random() * 6.28 }); }
 
-  // your side (left) — heroes 70% power + a small crew swarm 30%
-  const yourHeroPow = eff * 0.7 / heroes.length;
-  heroes.forEach((h, i) => mk("you", h.e, yourHeroPow, W * 0.16 + (i % 2) * 26, H * (0.30 + i * 0.11), true, false));
-  const crewN = 6, crewPow = eff * 0.3 / crewN;
-  for (let i = 0; i < crewN; i++) mk("you", "🥷", crewPow, W * 0.09 + Math.random() * 40, H * (0.28 + Math.random() * 0.5), false, false);
-  // enemy side (right) — boss 55% + minions 45%
-  mk("foe", monster.e, epow * 0.55, W * 0.82, H * 0.44, false, true);
-  const minN = 7, minPow = epow * 0.45 / minN;
-  for (let i = 0; i < minN; i++) mk("foe", "👾", minPow, W * 0.86 + Math.random() * 40, H * (0.24 + Math.random() * 0.5), Math.random() < 0.4, false);
-
-  const foeGlow = ({ s1: "#ff6b6b", s2: "#e0a060", s3: "#b06bff", s4: "#56e0ff", s5: "#7CFFB0", s6: "#ffce54" })[monster.id] || "#ff6b6b";
+  // your side (left) — heroes (ranged, 60% power) form a back line, crew (melee, 40%) up front
+  const yourHeroPow = eff * 0.6 / heroes.length;
+  const hSpread = Math.min(0.13, 0.62 / heroes.length);
+  heroes.forEach((h, i) => mk("you", h.e, yourHeroPow, W * 0.20, H * (0.5 - (heroes.length - 1) * hSpread / 2 + i * hSpread), true, "hero"));
+  const crewN = 3, crewPow = eff * 0.4 / crewN;
+  for (let i = 0; i < crewN; i++) mk("you", "🥷", crewPow, W * 0.11, H * (0.34 + i * 0.16), false, "crew");
+  // enemy side (right) — boss (50%) + a minion line (50%)
+  mk("foe", monster.e, epow * 0.5, W * 0.80, H * 0.46, false, "boss");
+  const minN = 5, minPow = epow * 0.5 / minN;
+  for (let i = 0; i < minN; i++) mk("foe", "👾", minPow, W * 0.89, H * (0.24 + i * 0.13), Math.random() < 0.35, "minion");
 
   /* ---------------- sim ---------------- */
   function nearest(u) { let best = null, bd = 1e9;
@@ -81,30 +93,46 @@ export function runBattle(opts) {
         if (u.ranged) { shots.push({ x: u.x, y: u.y, t, dmg: u.atk, col: u.side === "you" ? "#7CFFB0" : foeGlow, side: u.side, sp: 320 }); }
         else { hurt(t, u.atk); u.x -= dx / dist * 5; setTimeout(() => {}, 0); }
       } } }
+    // separation — units push apart so they form readable lines instead of piling up
+    for (let i = 0; i < units.length; i++) { const a = units[i]; if (!a.alive) continue;
+      for (let j = i + 1; j < units.length; j++) { const b = units[j]; if (!b.alive) continue;
+        let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 1; const min = (a.r + b.r) * 0.9;
+        if (d < min) { const p = (min - d) / d * 0.5; a.x -= dx * p; a.y -= dy * p; b.x += dx * p; b.y += dy * p; } } }
+    for (const u of units) { u.x = Math.max(u.r, Math.min(W - u.r, u.x)); u.y = Math.max(u.r + 30, Math.min(H - u.r - 10, u.y)); }
     for (let i = shots.length - 1; i >= 0; i--) { const s = shots[i]; if (!s.t.alive) { shots.splice(i, 1); continue; }
       const dx = s.t.x - s.x, dy = s.t.y - s.y, d = Math.hypot(dx, dy) || 1;
       if (d < 10) { hurt(s.t, s.dmg); shots.splice(i, 1); continue; }
       s.x += dx / d * s.sp * dt; s.y += dy / d * s.sp * dt; }
     for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 1.6; if (p.life <= 0) parts.splice(i, 1); }
   }
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function drawChar(u) {
+    const s = u.r, hy = u.y - s * 0.5, hr = s * 0.66;
+    const bw = s * 1.5, bh = s * 1.45, bx = u.x - bw / 2, by = u.y - s * 0.12;
+    // ground shadow
+    ctx.fillStyle = "rgba(12,26,40,.26)"; ctx.beginPath(); ctx.ellipse(u.x, u.y + s * 0.95, s * 0.86, s * 0.32, 0, 0, 7); ctx.fill();
+    // body capsule
+    const g = ctx.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, u.pal.l); g.addColorStop(1, u.pal.d);
+    rr(bx, by, bw, bh, s * 0.55); ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = u.big ? 3.5 : 2.4; ctx.strokeStyle = u.pal.s; ctx.stroke();
+    // head + face
+    ctx.beginPath(); ctx.arc(u.x, hy, hr, 0, 7); ctx.fillStyle = "#0d1a28"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = u.pal.s; ctx.stroke();
+    ctx.font = (hr * 1.55) + "px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(u.e, u.x, hy + 1);
+    // hit flash
+    if (u.flash > 0) { ctx.globalAlpha = u.flash * 0.85; ctx.fillStyle = "#fff"; rr(bx, by, bw, bh, s * 0.55); ctx.fill(); ctx.beginPath(); ctx.arc(u.x, hy, hr, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    // hp bar
+    const barW = bw, hpp = Math.max(0, u.hp / u.maxHp), byy = u.y - s * 1.3;
+    ctx.fillStyle = "rgba(4,10,18,.85)"; rr(u.x - barW / 2, byy, barW, 5, 2.5); ctx.fill();
+    ctx.fillStyle = u.side === "you" ? "#7CFFB0" : "#ff6b6b"; rr(u.x - barW / 2, byy, barW * hpp, 5, 2.5); ctx.fill();
+  }
 
   function draw() {
     const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#bcd6ef"); g.addColorStop(1, "#8fb0d0");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = .5; for (let i = 0; i < 60; i++) { ctx.fillStyle = "#fff"; ctx.fillRect((i * 137) % W, (i * 89) % H, 2, 2); } ctx.globalAlpha = 1;
-    // units sorted by y
+    // units sorted by y (painter's order) — rendered as standing characters
     const alive = units.filter((u) => u.alive).sort((a, b) => a.y - b.y);
-    for (const u of alive) {
-      ctx.fillStyle = "rgba(20,40,60,.25)"; ctx.beginPath(); ctx.ellipse(u.x, u.y + u.r * 0.7, u.r * 0.9, u.r * 0.4, 0, 0, 7); ctx.fill();
-      const col = u.side === "you" ? "#7CFFB0" : foeGlow;
-      ctx.beginPath(); ctx.arc(u.x, u.y, u.r, 0, 7); ctx.fillStyle = "rgba(8,18,30,.55)"; ctx.fill();
-      ctx.lineWidth = u.big ? 4 : 2.5; ctx.strokeStyle = col; ctx.stroke();
-      if (u.flash > 0) { ctx.globalAlpha = u.flash; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(u.x, u.y, u.r, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
-      ctx.font = (u.big ? 34 : 22) + "px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(u.e, u.x, u.y + 1);
-      // hp bar
-      const bw = u.r * 2, hpp = Math.max(0, u.hp / u.maxHp); ctx.fillStyle = "rgba(4,10,18,.8)"; ctx.fillRect(u.x - bw / 2, u.y - u.r - 8, bw, 4);
-      ctx.fillStyle = u.side === "you" ? "#7CFFB0" : "#ff6b6b"; ctx.fillRect(u.x - bw / 2, u.y - u.r - 8, bw * hpp, 4);
-    }
+    for (const u of alive) drawChar(u);
     for (const s of shots) { ctx.fillStyle = s.col; ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, 7); ctx.fill();
       ctx.globalAlpha = .4; ctx.beginPath(); ctx.arc(s.x, s.y, 7, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
     for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
