@@ -137,8 +137,21 @@ b{ font-weight:700; }
 .slots{ display:flex; gap:6px; flex:1; justify-content:flex-end; }
 .slot{ width:42px; height:50px; border-radius:10px; display:grid; place-items:center; position:relative; font-size:22px;
   background:rgba(6,16,28,.6); border:1.5px dashed rgba(125,211,252,.3); }
-.slot.full{ border-style:solid; }
+.slot.full{ border-style:solid; cursor:pointer; }
+.slot.empty{ cursor:pointer; color:rgba(125,211,252,.7); transition:border-color .18s, color .18s; }
+.slot.empty:hover{ border-color:rgba(124,255,176,.7); color:var(--token); }
+.slot.full:active{ transform:scale(.94); }
 .slot .sl-lv{ position:absolute; bottom:-2px; right:-2px; font-family:'Oswald'; font-weight:700; font-size:9px; padding:0 4px; border-radius:7px; background:#0a1a2b; border:1px solid rgba(125,211,252,.4); }
+.slot .sl-x{ position:absolute; top:-5px; left:-5px; width:16px; height:16px; border-radius:50%; display:grid; place-items:center;
+  font-size:9px; font-weight:700; color:#fff; background:linear-gradient(180deg,#ff6b6b,#c0392b); border:1px solid rgba(255,255,255,.35); box-shadow:0 2px 6px rgba(0,0,0,.4); }
+/* squad picker sheet */
+.pickgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+.pickcard{ border-radius:14px; padding:9px 6px 8px; text-align:center; cursor:pointer; border:1.5px solid;
+  background:linear-gradient(180deg, rgba(16,36,56,.9), rgba(8,18,30,.95)); transition:transform .1s, box-shadow .2s; }
+.pickcard:hover{ box-shadow:0 0 16px rgba(124,255,176,.25); } .pickcard:active{ transform:scale(.96); }
+.pickcard .pick-art{ height:52px; display:grid; place-items:center; } .pickcard .pick-art svg{ height:52px; width:auto; }
+.pickcard .pn{ font-family:'Oswald'; font-weight:600; font-size:12px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pickcard .hpow{ font-family:'Oswald'; font-weight:700; font-size:11px; color:#ffe2a0; margin-top:2px; }
 
 .btn-row{ display:flex; gap:8px; margin-bottom:14px; }
 .sumbtn{ flex:1; height:54px; border-radius:14px; font-family:'Oswald'; font-weight:700; font-size:15px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;

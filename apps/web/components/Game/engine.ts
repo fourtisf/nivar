@@ -394,8 +394,8 @@ export function initGame(): () => void {
   function renderHeroes() {
     const owned = Object.keys(S.heroes);
     const slots = [];
-    for (let i = 0; i < 5; i++) { const id = S.squad[i]; if (id) { const h = HERO(id); slots.push(`<div class="slot full" style="border-color:${RCOL[h.rarity]}"><div class="slot-art">${heroArt(h.id, h.e)}</div><span class="sl-lv">L${S.heroes[id].level}</span></div>`); }
-      else slots.push(`<div class="slot">＋</div>`); }
+    for (let i = 0; i < 5; i++) { const id = S.squad[i]; if (id) { const h = HERO(id); slots.push(`<div class="slot full" data-unequip="${id}" title="Tap to remove" style="border-color:${RCOL[h.rarity]}"><div class="slot-art">${heroArt(h.id, h.e)}</div><span class="sl-lv">L${S.heroes[id].level}</span><span class="sl-x">✕</span></div>`); }
+      else slots.push(`<div class="slot empty" data-addslot="1" title="Tap to add">＋</div>`); }
     const cards = HEROES_POOL.map((h) => { const o = S.heroes[h.id]; const eq = S.squad.includes(h.id);
       if (!o) return `<div class="hcardx locked" style="border-color:${RCOL[h.rarity]}"><div class="he">${heroArt(h.id, h.e)}</div><div class="hn">???</div><div class="hr" style="color:${RCOL[h.rarity]}">${h.rarity}</div></div>`;
       const gemCost = CFG.heroLevelUpCrystalCost(o.level); const canUp = S.crystal >= gemCost;
@@ -407,11 +407,30 @@ export function initGame(): () => void {
     $("scrBody").innerHTML = `
       <div class="squadbar"><div class="sp"><div class="k">SQUAD POWER</div><div class="v">⚔️ ${ab(squadPower())}</div></div><div class="slots">${slots.join("")}</div></div>
       <div class="btn-row"><button class="sumbtn" id="sum1">SUMMON ×1<small>💎 100</small></button><button class="sumbtn ten" id="sum10">SUMMON ×10<small>💎 900</small></button></div>
-      <div class="scr-sub">Pull CT legends, then <b style="color:var(--token)">⬆ LEVEL UP</b> to raise their power. Equip up to 5 — their buffs boost your economy &amp; raids.</div>
+      <div class="scr-sub"><b style="color:var(--token)">Tap a slot ✕</b> to remove a hero, <b style="color:var(--token)">＋</b> to add one. Summon &amp; <b style="color:var(--token)">⬆ LEVEL UP</b> to grow power (max 5 equipped).</div>
       <div class="hgrid">${cards}</div>`;
     $("sum1").addEventListener("click", () => pull(1)); $("sum10").addEventListener("click", () => pull(10));
+    $("scrBody").querySelectorAll("[data-unequip]").forEach((el) => el.addEventListener("click", () => { S.squad = S.squad.filter((x) => x !== el.dataset.unequip); Audio.sfx("click"); toast("Removed from squad", "gold"); refresh(); renderHeroes(); }));
+    $("scrBody").querySelectorAll("[data-addslot]").forEach((el) => el.addEventListener("click", openSquadPicker));
     $("scrBody").querySelectorAll("[data-up]").forEach((el) => el.addEventListener("click", (e) => { e.stopPropagation(); quickLevel(el.dataset.up); }));
     $("scrBody").querySelectorAll("[data-hero]").forEach((el) => el.addEventListener("click", () => openHero(el.dataset.hero)));
+  }
+  // Bottom-sheet picker: choose an owned, unequipped hero to add to the squad.
+  function openSquadPicker() {
+    if (S.squad.length >= 5) { toast("Squad full (5/5) — remove one first", "gold"); return; }
+    const avail = Object.keys(S.heroes).filter((id) => !S.squad.includes(id));
+    if (!avail.length) { toast("No spare heroes — summon more", "gold"); return; }
+    const cards = avail.map((id) => { const h = HERO(id); const o = S.heroes[id];
+      return `<div class="pickcard" data-pick="${id}" style="border-color:${RCOL[h.rarity]}">
+        <div class="pick-art">${heroArt(h.id, h.e)}</div><div class="pn">${h.name}</div>
+        <div class="hr" style="color:${RCOL[h.rarity]}">Lv ${o.level}</div><div class="hpow">⚔️ ${ab(heroPower(id))}</div></div>`; }).join("");
+    sbody.innerHTML = `<div class="sh-t" style="margin-bottom:4px">Add to squad</div>
+      <div class="scr-sub" style="margin:0 0 12px">Tap a hero to equip. Their buff activates and adds power.</div>
+      <div class="pickgrid">${cards}</div>`;
+    sbody.querySelectorAll("[data-pick]").forEach((el) => el.addEventListener("click", () => {
+      if (S.squad.length >= 5) { toast("Squad full (5/5)", "gold"); return; }
+      S.squad.push(el.dataset.pick); Audio.sfx("summon"); toast(HERO(el.dataset.pick).name + " equipped", "good"); closeSheet(); refresh(); openScreen("heroes"); }));
+    openSheet();
   }
   function quickLevel(id) { const o = S.heroes[id]; if (!o) return; const h = HERO(id); const cost = CFG.heroLevelUpCrystalCost(o.level);
     if (S.crystal < cost) { toast("Need 💎 " + ab(cost) + " to level up", "gold"); return; }
