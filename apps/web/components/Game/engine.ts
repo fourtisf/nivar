@@ -618,7 +618,7 @@ export function initGame(): () => void {
      PAN + WIRING
      ============================================================ */
   let drag = null; const game = $("game");
-  game.addEventListener("pointerdown", (e) => { if (e.target.closest(".hud,.bspot,.left-cards,.right-rail,.task-bar,.bottom-nav,#sheet,#screen,#modal,.hintdrag,.collectible,.boost-fab")) return;
+  game.addEventListener("pointerdown", (e) => { if (e.target.closest(".hud,.bspot,.left-cards,.right-rail,.task-bar,.bottom-nav,#sheet,#screen,#modal,.hintdrag,.collectible,.boost-fab,.battle-arena")) return;
     drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }; game.setPointerCapture(e.pointerId); $("hint").style.opacity = "0"; });
   game.addEventListener("pointermove", (e) => { if (!drag) return; cam.x = clamp(drag.cx + (e.clientX - drag.x), panMin.x, panMax.x); cam.y = clamp(drag.cy + (e.clientY - drag.y), panMin.y, panMax.y); positionOverlays(); });
   game.addEventListener("pointerup", () => (drag = null)); game.addEventListener("pointercancel", () => (drag = null));
