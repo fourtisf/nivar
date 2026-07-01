@@ -409,21 +409,27 @@ export function initGame(): () => void {
     $("sum1").addEventListener("click", () => pull(1)); $("sum10").addEventListener("click", () => pull(10));
     $("scrBody").querySelectorAll("[data-hero]").forEach((el) => el.addEventListener("click", () => openHero(el.dataset.hero)));
   }
-  function openHero(id) { const h = HERO(id), o = S.heroes[id]; const eq = S.squad.includes(id); const lvCost = CFG.heroLevelUpShardCost(o.level);
+  function openHero(id) { const h = HERO(id), o = S.heroes[id]; const eq = S.squad.includes(id);
+    const shardCost = CFG.heroLevelUpShardCost(o.level), gemCost = CFG.heroLevelUpCrystalCost(o.level);
+    const curPow = heroPower(id), nextPow = CFG.heroPower(id, o.level + 1); const gain = nextPow - curPow;
     sbody.innerHTML = `<div class="sh-head"><div class="sh-ic" style="border-color:${RCOL[h.rarity]};font-size:34px">${h.e}</div>
       <div><div class="sh-t">${h.name}</div><div class="sh-s" style="color:${RCOL[h.rarity]}">${h.rarity.toUpperCase()} · ${h.role}</div></div></div>
       <div class="statrow"><div class="stat"><div class="k">LEVEL</div><div class="v">${o.level}</div></div>
-        <div class="stat"><div class="k">POWER</div><div class="v">⚔️ ${ab(heroPower(id))}</div></div>
+        <div class="stat"><div class="k">POWER</div><div class="v">⚔️ ${ab(curPow)}</div></div>
         <div class="stat"><div class="k">SHARDS</div><div class="v">🧩 ${o.shards}</div></div></div>
+      <div class="lvprev">Next level: ⚔️ ${ab(curPow)} <b style="color:var(--token)">→ ${ab(nextPow)}</b> <span style="color:var(--token)">(+${ab(gain)})</span></div>
       <div class="costbox"><div class="ct">PASSIVE BUFF (WHEN EQUIPPED)</div><div style="font-size:13px;color:#cfe6ff">${h.blurb}</div></div>
-      <div class="tworow">
+      <button class="bigbtn up" id="lvGem" ${S.crystal < gemCost ? "disabled" : ""}>⬆ LEVEL UP · 💎 ${ab(gemCost)}</button>
+      <div class="tworow" style="margin-top:8px">
         <button class="bigbtn ${eq ? "alt" : "purple"}" id="eqBtn">${eq ? "UNEQUIP" : "EQUIP"}</button>
-        <button class="bigbtn" id="lvBtn" ${o.shards < lvCost ? "disabled" : ""}>LEVEL UP · 🧩${lvCost}</button>
+        <button class="bigbtn alt" id="lvShard" ${o.shards < shardCost ? "disabled" : ""}>🧩 ${shardCost}</button>
       </div>
-      <div class="note">${eq ? "Equipped in your squad." : (S.squad.length >= 5 ? "Squad full (5/5) — unequip someone first." : "Equip to activate the buff and add power.")}</div>`;
+      <div class="note">${eq ? "Equipped in your squad." : (S.squad.length >= 5 ? "Squad full (5/5) — unequip someone first." : "Equip to activate the buff and add power.")} Level up with 💎 anytime, or spend 🧩 shards from duplicate summons.</div>`;
     $("eqBtn").addEventListener("click", () => { if (eq) { S.squad = S.squad.filter((x) => x !== id); } else { if (S.squad.length >= 5) { toast("Squad full (5/5)", "gold"); return; } S.squad.push(id); }
       closeSheet(); refresh(); openScreen("heroes"); });
-    const lv = $("lvBtn"); if (lv) lv.addEventListener("click", () => { if (o.shards < lvCost) { toast("Not enough shards", "gold"); return; } o.shards -= lvCost; o.level++; toast(h.name + " → Lv " + o.level, "good"); closeSheet(); refresh(); openScreen("heroes"); });
+    function levelUp() { o.level++; Audio.sfx("level"); toast(h.name + " → Lv " + o.level, "good"); closeSheet(); refresh(); openScreen("heroes"); }
+    $("lvGem").addEventListener("click", () => { if (S.crystal < gemCost) { toast("Not enough 💎", "gold"); return; } S.crystal -= gemCost; levelUp(); });
+    $("lvShard").addEventListener("click", () => { if (o.shards < shardCost) { toast("Not enough shards", "gold"); return; } o.shards -= shardCost; levelUp(); });
     openSheet(); }
 
   /* gacha */

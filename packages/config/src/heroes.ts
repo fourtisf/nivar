@@ -33,3 +33,6 @@ export const HERO_POWER_GROWTH = 0.3;
 
 /** Shard cost to level a hero from `level` → `level+1`. */
 export const heroLevelUpShardCost = (level: number): number => level * 3;
+
+/** Crystal (💎) cost to level a hero from `level` → `level+1` — the always-available upgrade path. */
+export const heroLevelUpCrystalCost = (level: number): number => Math.round(80 * Math.pow(1.32, level - 1));
