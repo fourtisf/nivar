@@ -101,7 +101,10 @@ export function initGame(): () => void {
     cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px"; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     scene.width = OW * DPR; scene.height = OH * DPR; sx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const f = isoOff(FURNACE.gx, FURNACE.gy);
-    const dcx = VW / 2 - f.x, dcy = VH * 0.50 - f.y; cam.x = dcx; cam.y = dcy;
+    // On desktop the map is full-screen; drop the base lower-center so it clears
+    // the top HUD / side rails instead of colliding with the building labels.
+    const cyFrac = VW >= 520 ? 0.60 : 0.50;
+    const dcx = VW / 2 - f.x, dcy = VH * cyFrac - f.y; cam.x = dcx; cam.y = dcy;
     const MX = Math.max(60, (OW - VW) / 2 + 110), MY = Math.max(60, (OH - VH) / 2 + 150);
     panMin.x = dcx - MX; panMax.x = dcx + MX; panMin.y = dcy - MY; panMax.y = dcy + MY;
     renderScene(); positionOverlays();
