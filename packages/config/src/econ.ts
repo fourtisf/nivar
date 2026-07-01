@@ -16,8 +16,16 @@ export const ECON = {
   ENERGY_BURN_PER_RIG: 1.2,
   /** crew growth toward popCap, per second */
   POP_GROWTH_RATE: 0.4,
+  /** global production multiplier — punchier early game (fun tuning) */
+  PROD_MULT: 2.2,
   /** $NIVAR trickle per Alpha Lab (explorers) level per second, × token bonus */
-  CRYSTAL_TRICKLE_PER_LAB: 0.06,
+  CRYSTAL_TRICKLE_PER_LAB: 0.14,
+  /** active-play boost: tap-to-boost multiplier + duration/cooldown (ms) */
+  BOOST_MULT: 2,
+  BOOST_DURATION_MS: 15000,
+  BOOST_COOLDOWN_MS: 45000,
+  /** offline accrual cap for the welcome-back popup (8h) */
+  OFFLINE_CAP_MS: 8 * 3600 * 1000,
   /** idle accrual hard cap (server rejects/clamps dt beyond this) — 12h */
   ACCRUAL_CAP_MS: 12 * 3600 * 1000,
   /** speed-up: $NIVAR price = ceil(remainingMs / MS_PER_GEM), min 1 */
@@ -71,7 +79,7 @@ export function bonuses(research: Record<string, number>, squad: string[]): Bonu
 export function prodPerSec(building: BuildingDef, level: number, warmth: number, b: Bonuses): number {
   if (!building.res || building.res === "pop") return 0;
   const res = building.res as ResourceKey;
-  return building.base * level * warmthMult(warmth) * b.prodAll * (b[res as keyof Bonuses] ?? 1);
+  return building.base * level * warmthMult(warmth) * b.prodAll * (b[res as keyof Bonuses] ?? 1) * ECON.PROD_MULT;
 }
 
 /* ---------------- Hero / squad power ---------------- */
@@ -160,10 +168,10 @@ export function scaleCost(base: ResourceBag, level: number): ResourceBag {
 
 /* ---------------- Build timing ---------------- */
 export const buildSecsUpgrade = (targetLevel: number, buildBonus: number): number =>
-  clamp(targetLevel * 5, 8, 55) / buildBonus;
+  clamp(targetLevel * 3, 5, 32) / buildBonus;
 
 export const buildSecsFurnace = (furnace: number, buildBonus: number): number =>
-  clamp((furnace + 2) * 9, 25, 120) / buildBonus;
+  clamp((furnace + 2) * 6, 15, 70) / buildBonus;
 
 export const maxBLevel = (furnace: number): number => furnace;
 

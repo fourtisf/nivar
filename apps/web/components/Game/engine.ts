@@ -193,7 +193,7 @@ export function initGame(): () => void {
     ctx.shadowColor = "rgba(255,120,30,.9)"; ctx.shadowBlur = 20; flame(13 * ft.sc, 30 * ft.sc, "#ff5a1a", 0); flame(9 * ft.sc, 24 * ft.sc, "#ff9b3d", -2); flame(6 * ft.sc, 18 * ft.sc, "#ffd66a", 2); ctx.shadowBlur = 0; ctx.restore();
     if (!reduce && Math.random() < .7) embers.push({ x: ft.x + (Math.random() * 14 - 7), y: ft.y, vx: Math.random() * .8 - .4, vy: -(Math.random() * 1.1 + .6), life: 1, r: Math.random() * 1.8 + .8 });
     for (let i = embers.length - 1; i >= 0; i--) { const p = embers[i]; p.x += p.vx; p.y += p.vy; p.vy += .012; p.life -= .012; if (p.life <= 0) { embers.splice(i, 1); continue; }
-      ctx.globalAlpha = p.life; ctx.fillStyle = p.life > .5 ? "#ffb259" : "#ff5a1a"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life + .4, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
+      ctx.globalAlpha = p.life; ctx.fillStyle = p.c || (p.life > .5 ? "#ffb259" : "#ff5a1a"); ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life + .4, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
     if (selected) { const b = byId(selected); const p = w2s(b.gx, b.gy); const hw = b.id === "furnace" ? HW * 1.4 : HW; const d = tileDiamond(p.x, p.y, hw);
       ctx.strokeStyle = `rgba(124,255,176,${0.5 + 0.4 * Math.sin(t / 180)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(d[0].x, d[0].y); for (let i = 1; i < 4; i++) ctx.lineTo(d[i].x, d[i].y); ctx.closePath(); ctx.stroke(); }
     const wind = Math.sin(t / 4000) * .6;
@@ -521,9 +521,9 @@ export function initGame(): () => void {
     storm -= dt; if (storm <= 0) storm = 200 + Math.random() * 120;
     const target = CFG.warmthTarget(S.coal); S.warmth += (target - S.warmth) * Math.min(1, dt * CFG.ECON.WARMTH_TWEEN_RATE);
     if (S.coal > 0) S.coal = Math.max(0, S.coal - CFG.energyBurnPerSec(S.furnace) * dt);
-    const m = warmthMult(); const B = bonuses();
-    for (const b of BUILDINGS) { if (b.res && b.res !== "pop") S[b.res] += CFG.prodPerSec(b, b.lv, S.warmth, B) * dt; }
-    S.crystal += CFG.ECON.CRYSTAL_TRICKLE_PER_LAB * byId("explorers").lv * dt * B.token;
+    const m = warmthMult(); const B = bonuses(); const boost = prodBoost();
+    for (const b of BUILDINGS) { if (b.res && b.res !== "pop") S[b.res] += CFG.prodPerSec(b, b.lv, S.warmth, B) * dt * boost; }
+    S.crystal += CFG.ECON.CRYSTAL_TRICKLE_PER_LAB * byId("explorers").lv * dt * B.token * boost;
     S.popCap = shelterPopCap(); if (S.pop < S.popCap) S.pop = Math.min(S.popCap, S.pop + dt * CFG.ECON.POP_GROWTH_RATE);
     if (job && Date.now() >= job.endsAt) finishJob();
     power = calcPower(); updateTaskBar();
@@ -541,7 +541,7 @@ export function initGame(): () => void {
      PAN + WIRING
      ============================================================ */
   let drag = null; const game = $("game");
-  game.addEventListener("pointerdown", (e) => { if (e.target.closest(".hud,.bspot,.left-cards,.right-rail,.task-bar,.bottom-nav,#sheet,#screen,#modal,.hintdrag")) return;
+  game.addEventListener("pointerdown", (e) => { if (e.target.closest(".hud,.bspot,.left-cards,.right-rail,.task-bar,.bottom-nav,#sheet,#screen,#modal,.hintdrag,.collectible,.boost-fab")) return;
     drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }; game.setPointerCapture(e.pointerId); $("hint").style.opacity = "0"; });
   game.addEventListener("pointermove", (e) => { if (!drag) return; cam.x = clamp(drag.cx + (e.clientX - drag.x), panMin.x, panMax.x); cam.y = clamp(drag.cy + (e.clientY - drag.y), panMin.y, panMax.y); positionOverlays(); });
   game.addEventListener("pointerup", () => (drag = null)); game.addEventListener("pointercancel", () => (drag = null));
@@ -627,13 +627,96 @@ export function initGame(): () => void {
   const powChip = $("powVal").closest(".chip"); if (powChip) powChip.addEventListener("click", () => toast("Net Worth 💰 — your overall power. Grows with upgrades, heroes & research.", "gold"));
   const tempChip = document.querySelector(".temp"); if (tempChip) tempChip.addEventListener("click", () => { const t = tempLabel(); toast("Sentiment " + t[0] + " (" + t[2] + ") — keep your Rig fueled to avoid Extreme Fear.", "gold"); });
 
+  /* ============================================================
+     ENGAGEMENT — active boost, tappable loot, offline earnings, juice
+     ============================================================ */
+  let boostUntil = 0, boostCdUntil = 0;
+  function boostActive() { return Date.now() < boostUntil; }
+  function prodBoost() { return boostActive() ? CFG.ECON.BOOST_MULT : 1; }
+
+  function shake() { game.classList.remove("shakefx"); void game.offsetWidth; game.classList.add("shakefx"); setTimeout(() => game.classList.remove("shakefx"), 380); }
+  function popAt(x, y, text, color) { const el = document.createElement("div"); el.textContent = text;
+    el.style.cssText = `position:absolute;z-index:8;left:${x}px;top:${y}px;transform:translate(-50%,-50%);font-family:Oswald;font-weight:700;font-size:19px;color:${color || "#ffd089"};text-shadow:0 2px 8px #000;pointer-events:none;transition:all 1s ease;`;
+    overlay.appendChild(el); requestAnimationFrame(() => { el.style.top = (y - 62) + "px"; el.style.opacity = "0"; }); setTimeout(() => el.remove(), 1000); }
+  function burst(x, y, n, col) { for (let k = 0; k < (n || 14); k++) embers.push({ x, y, vx: Math.random() * 4 - 2, vy: -(Math.random() * 3 + .5), life: 1, r: Math.random() * 2 + 1, c: col }); }
+
+  // Boost FAB — tap for 2× production (duration + cooldown from config)
+  const boostFab = document.createElement("button");
+  boostFab.className = "boost-fab"; boostFab.innerHTML = `<span class="bi">⚡</span><span class="bl">BOOST</span>`;
+  boostFab.addEventListener("click", (e) => { e.stopPropagation(); const now = Date.now();
+    if (now < boostCdUntil) { toast("Boost recharging…", "gold"); return; }
+    boostUntil = now + CFG.ECON.BOOST_DURATION_MS; boostCdUntil = boostUntil + CFG.ECON.BOOST_COOLDOWN_MS;
+    shake(); juiceClaim(); const ft = w2s(FURNACE.gx, FURNACE.gy); burst(ft.x, ft.y - 40, 34, "#ffd66a");
+    toast("⚡ OVERDRIVE — 2× production!", "gold"); });
+  game.appendChild(boostFab);
+  function updateBoostFab() { const now = Date.now();
+    if (now < boostUntil) { boostFab.className = "boost-fab on"; boostFab.querySelector(".bl").textContent = Math.ceil((boostUntil - now) / 1000) + "s"; }
+    else if (now < boostCdUntil) { boostFab.className = "boost-fab cd"; boostFab.querySelector(".bl").textContent = Math.ceil((boostCdUntil - now) / 1000) + "s"; }
+    else { boostFab.className = "boost-fab"; boostFab.querySelector(".bl").textContent = "BOOST"; } }
+
+  // Tappable loot that drops on the base
+  const COLL = [
+    { ic: "💎", res: "crystal", min: 12, max: 34, col: "#7CFFB0" },
+    { ic: "⚡", res: "coal", min: 500, max: 1500, col: "#ffd24d" },
+    { ic: "🖥️", res: "iron", min: 300, max: 1000, col: "#7CFFB0" },
+    { ic: "📡", res: "wood", min: 600, max: 1700, col: "#56e0ff" },
+    { ic: "🍜", res: "food", min: 600, max: 1700, col: "#ff8a3d" },
+  ];
+  let collCount = 0;
+  function spawnCollectible() {
+    if (document.hidden || collCount >= 3 || screen.classList.contains("on") || modalOpen) return;
+    const c = rand(COLL); const amt = c.min + Math.floor(Math.random() * (c.max - c.min));
+    const cx = VW * 0.5 + (Math.random() * 220 - 110), cy = VH * 0.44 + (Math.random() * 170 - 85);
+    const el = document.createElement("button"); el.className = "collectible"; el.textContent = c.ic;
+    el.style.left = cx + "px"; el.style.top = cy + "px"; collCount++;
+    let taken = false;
+    const take = () => { if (taken) return; taken = true; S[c.res] += amt;
+      popAt(cx, cy, "+" + ab(amt) + " " + c.ic, c.col); burst(cx, cy, 16, c.col);
+      if (c.res === "crystal") juiceClaim(); el.remove(); collCount--; refresh(); };
+    el.addEventListener("click", (e) => { e.stopPropagation(); take(); });
+    overlay.appendChild(el);
+    setTimeout(() => { if (!taken) { el.remove(); collCount--; } }, 8000);
+  }
+
+  // Offline earnings ("welcome back")
+  const LAST_KEY = "nivar_lastVisit";
+  function saveVisit() { try { localStorage.setItem(LAST_KEY, "" + Date.now()); } catch (e) {} }
+  function offlineEarnings() {
+    let last = 0; try { last = parseInt(localStorage.getItem(LAST_KEY) || "0"); } catch (e) {}
+    const now = Date.now(); if (!last || now - last < 60000) return;
+    const dt = Math.min((now - last) / 1000, CFG.ECON.OFFLINE_CAP_MS / 1000); const B = bonuses();
+    const earned = { food: 0, wood: 0, coal: 0, iron: 0, crystal: 0 };
+    for (const b of BUILDINGS) { if (b.res && b.res !== "pop") earned[b.res] += CFG.prodPerSec(b, b.lv, S.warmth, B) * dt; }
+    earned.crystal += CFG.ECON.CRYSTAL_TRICKLE_PER_LAB * byId("explorers").lv * dt * B.token;
+    for (const k in earned) { earned[k] = Math.floor(earned[k]); S[k] += earned[k]; }
+    const h = Math.floor(dt / 3600), mm = Math.floor((dt % 3600) / 60); const away = (h ? h + "h " : "") + mm + "m";
+    const rows = Object.keys(earned).filter((k) => earned[k] > 0).map((k) => `<div class="ri2">${RICON[k]} ${ab(earned[k])}</div>`).join("");
+    $("modalBody").innerHTML = `<div class="mcard"><div class="mtitle" style="color:var(--token)">WELCOME BACK</div>
+      <div style="text-align:center;font-size:12.5px;color:var(--muted);margin:6px 0 2px">Your rigs kept mining for <b style="color:#eaf4ff">${away}</b> while you were away</div>
+      <div class="rewbox">${rows || '<div class="ri2">—</div>'}</div>
+      <button class="bigbtn" id="obOk" style="margin-top:12px">COLLECT</button></div>`;
+    $("obOk").addEventListener("click", () => { closeModal(); shake(); }); openModal(); refresh();
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) saveVisit(); });
+
   /* boot */
   for (const id in CFG.INITIAL_HEROES) S.heroes[id] = { ...CFG.INITIAL_HEROES[id] };
   S.squad = [...CFG.INITIAL_SQUAD];
   buildOverlay(); fit(); initFlakes(); S.popCap = shelterPopCap(); power = calcPower(); refresh(); updateTaskBar(); _raf = requestAnimationFrame(frame);
   _timeouts.push(setTimeout(() => { $("hint").style.opacity = "0"; }, 6000));
-  _timeouts.push(setTimeout(coachStart, 450));
-  _timeouts.push(setTimeout(() => toast("gm Operator. Survive the winter, stack $NIVAR.", "gold"), 500));
+  let _firstVisit = true; try { _firstVisit = !localStorage.getItem(LAST_KEY); } catch (e) {}
+  if (_firstVisit) {
+    _timeouts.push(setTimeout(coachStart, 450));
+    _timeouts.push(setTimeout(() => toast("gm Operator. Survive the winter, stack $NIVAR.", "gold"), 500));
+  } else {
+    _timeouts.push(setTimeout(offlineEarnings, 500));
+    _timeouts.push(setTimeout(() => toast("Welcome back, Operator.", "good"), 800));
+  }
+  saveVisit();
+  _intervals.push(setInterval(saveVisit, 5000));
+  _intervals.push(setInterval(updateBoostFab, 250));
+  _intervals.push(setInterval(spawnCollectible, 13000));
+  _timeouts.push(setTimeout(spawnCollectible, 3500));
   _intervals.push(setInterval(() => { if (curScreen === "raids") { const now = Date.now(); if (Object.values(S.clears).some((c) => c.cd && now < c.cd)) renderRaids(); } }, 1000));
 
   /* cleanup for React unmount / fast-refresh */

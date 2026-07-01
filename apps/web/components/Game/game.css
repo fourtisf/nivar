@@ -325,6 +325,28 @@ b{ font-weight:700; }
 .bspot .nm{ display:none; }
 .bspot .lv{ font-size:11px; padding:1px 7px; }
 
+/* ---------- engagement: screen shake, tappable loot, boost FAB ---------- */
+@keyframes shakefx{ 0%,100%{transform:translate(0,0)} 20%{transform:translate(-4px,2px)} 40%{transform:translate(4px,-2px)} 60%{transform:translate(-3px,-2px)} 80%{transform:translate(3px,2px)} }
+.shakefx{ animation:shakefx .38s ease; }
+
+.collectible{ position:absolute; z-index:7; transform:translate(-50%,-50%); width:48px; height:48px; border-radius:50%;
+  display:grid; place-items:center; font-size:25px; cursor:pointer; pointer-events:auto; border:1px solid rgba(124,255,176,.6);
+  background:radial-gradient(circle at 50% 32%, rgba(124,255,176,.4), rgba(10,24,40,.55)); box-shadow:0 0 20px rgba(124,255,176,.55);
+  animation:collbob 1.5s ease-in-out infinite, collin .3s ease backwards; }
+.collectible:active{ transform:translate(-50%,-50%) scale(.85); }
+@keyframes collbob{ 0%,100%{ margin-top:0 } 50%{ margin-top:-9px } }
+@keyframes collin{ from{ opacity:0; transform:translate(-50%,-50%) scale(.3) } to{ opacity:1; transform:translate(-50%,-50%) scale(1) } }
+
+.boost-fab{ position:absolute; z-index:7; left:12px; bottom:132px; width:56px; height:56px; border-radius:16px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
+  background:linear-gradient(180deg,#ffce54,#f0801a); color:#3a2208; border:1px solid rgba(255,220,120,.6); box-shadow:0 6px 20px rgba(240,128,26,.45); }
+.boost-fab .bi{ font-size:22px; line-height:1; }
+.boost-fab .bl{ font-family:'Oswald'; font-weight:700; font-size:9.5px; letter-spacing:.04em; }
+.boost-fab:active{ transform:translateY(1px); }
+.boost-fab.on{ background:linear-gradient(180deg,#9bffc6,#36c98a); color:#04231a; animation:boostpulse 1s ease-in-out infinite; }
+.boost-fab.cd{ filter:grayscale(.7) brightness(.72); }
+@keyframes boostpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(124,255,176,.6) } 50%{ box-shadow:0 0 0 11px rgba(124,255,176,0) } }
+
 /* ---------- site chrome (not part of the prototype) ---------- */
 .x-social{ position:fixed; right:16px; bottom:16px; z-index:17; width:44px; height:44px; border-radius:13px;
   display:grid; place-items:center; text-decoration:none;
