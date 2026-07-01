@@ -15,6 +15,7 @@
 import * as CFG from "@nivar/config";
 import { Audio } from "./audio";
 import { runBattle } from "./battle";
+import { heroArt } from "./heroArt";
 
 export function initGame(): () => void {
   "use strict";
@@ -228,7 +229,7 @@ export function initGame(): () => void {
     const tl = tempLabel(); $("sentEmo").textContent = tl[0]; $("sentVal").textContent = tl[1]; $("sentLbl").textContent = tl[2];
     if (job) { const r = Math.max(0, job.endsAt - Date.now()); const m = Math.floor(r / 60000), s = Math.floor((r % 60000) / 1000); $("buildTimer").textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s; } else $("buildTimer").textContent = "Idle";
     // squad mini
-    const sm = $("squadMini"); const html = S.squad.slice(0, 3).map((id) => { const h = HERO(id); return `<div class="ha" style="border-color:${RCOL[h.rarity]}">${h.e}</div>`; }).join("") || `<div class="ha" style="border-color:#445">➕</div>`;
+    const sm = $("squadMini"); const html = S.squad.slice(0, 3).map((id) => { const h = HERO(id); return `<div class="ha" style="border-color:${RCOL[h.rarity]}">${heroArt(h.id, h.e)}</div>`; }).join("") || `<div class="ha" style="border-color:#445">➕</div>`;
     if (sm._h !== html) { sm.innerHTML = html; sm._h = html; }
     $("heroDot").style.display = (S.crystal >= 100 && S.squad.length < 5) ? "block" : "none";
   }
@@ -393,14 +394,14 @@ export function initGame(): () => void {
   function renderHeroes() {
     const owned = Object.keys(S.heroes);
     const slots = [];
-    for (let i = 0; i < 5; i++) { const id = S.squad[i]; if (id) { const h = HERO(id); slots.push(`<div class="slot full" style="border-color:${RCOL[h.rarity]}">${h.e}<span class="sl-lv">L${S.heroes[id].level}</span></div>`); }
+    for (let i = 0; i < 5; i++) { const id = S.squad[i]; if (id) { const h = HERO(id); slots.push(`<div class="slot full" style="border-color:${RCOL[h.rarity]}"><div class="slot-art">${heroArt(h.id, h.e)}</div><span class="sl-lv">L${S.heroes[id].level}</span></div>`); }
       else slots.push(`<div class="slot">＋</div>`); }
     const cards = HEROES_POOL.map((h) => { const o = S.heroes[h.id]; const eq = S.squad.includes(h.id);
-      if (!o) return `<div class="hcardx locked" style="border-color:${RCOL[h.rarity]}"><div class="he">${h.e}</div><div class="hn">???</div><div class="hr" style="color:${RCOL[h.rarity]}">${h.rarity}</div></div>`;
+      if (!o) return `<div class="hcardx locked" style="border-color:${RCOL[h.rarity]}"><div class="he">${heroArt(h.id, h.e)}</div><div class="hn">???</div><div class="hr" style="color:${RCOL[h.rarity]}">${h.rarity}</div></div>`;
       const gemCost = CFG.heroLevelUpCrystalCost(o.level); const canUp = S.crystal >= gemCost;
       return `<div class="hcardx" style="border-color:${RCOL[h.rarity]};box-shadow:0 0 16px ${RCOL[h.rarity]}22" data-hero="${h.id}">
         <div class="hlv">Lv ${o.level}</div>${eq ? '<div class="heq">✅</div>' : ""}
-        <div class="he">${h.e}</div><div class="hn">${h.name}</div><div class="hr" style="color:${RCOL[h.rarity]}">${h.rarity}</div>
+        <div class="he">${heroArt(h.id, h.e)}</div><div class="hn">${h.name}</div><div class="hr" style="color:${RCOL[h.rarity]}">${h.rarity}</div>
         <div class="hpow">⚔️ ${ab(heroPower(h.id))}</div>${o.shards > 0 ? `<div class="shardtag">🧩${o.shards}</div>` : ""}
         <button class="hup ${canUp ? "" : "off"}" data-up="${h.id}">⬆ LEVEL UP · 💎${ab(gemCost)}</button></div>`; }).join("");
     $("scrBody").innerHTML = `
@@ -418,7 +419,7 @@ export function initGame(): () => void {
   function openHero(id) { const h = HERO(id), o = S.heroes[id]; const eq = S.squad.includes(id);
     const shardCost = CFG.heroLevelUpShardCost(o.level), gemCost = CFG.heroLevelUpCrystalCost(o.level);
     const curPow = heroPower(id), nextPow = CFG.heroPower(id, o.level + 1); const gain = nextPow - curPow;
-    sbody.innerHTML = `<div class="sh-head"><div class="sh-ic" style="border-color:${RCOL[h.rarity]};font-size:34px">${h.e}</div>
+    sbody.innerHTML = `<div class="sh-head"><div class="sh-ic sh-art" style="border-color:${RCOL[h.rarity]}">${heroArt(h.id, h.e)}</div>
       <div><div class="sh-t">${h.name}</div><div class="sh-s" style="color:${RCOL[h.rarity]}">${h.rarity.toUpperCase()} · ${h.role}</div></div></div>
       <div class="statrow"><div class="stat"><div class="k">LEVEL</div><div class="v">${o.level}</div></div>
         <div class="stat"><div class="k">POWER</div><div class="v">⚔️ ${ab(curPow)}</div></div>

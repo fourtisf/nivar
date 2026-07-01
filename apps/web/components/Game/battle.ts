@@ -141,11 +141,10 @@ export function runBattle(opts) {
     // torso
     const bg = ctx.createLinearGradient(0, cy - s * 0.25 + bob, 0, cy + s * 0.6 + bob); bg.addColorStop(0, p.armorL); bg.addColorStop(1, p.armor);
     rr(cx - s * 0.6, cy - s * 0.2 + bob, s * 1.2, s * 0.92, s * 0.4); ctx.fillStyle = bg; ctx.fill(); ctx.stroke();
-    // chest emblem — hero's own badge (keeps identity without an emoji "face")
-    if (u.emblem) { const ey0 = cy + s * 0.22 + bob; ctx.fillStyle = "#f4fbff"; ctx.beginPath(); ctx.arc(cx, ey0, s * 0.3, 0, 7); ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = p.armorL; ctx.stroke();
-      ctx.font = (s * 0.42) + "px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(u.emblem, cx, ey0 + 1);
-      ctx.lineWidth = u.big ? 3 : 2; ctx.strokeStyle = p.stroke;
+    // chest crest — a small diamond emblem in the hero's accent colour (no emoji)
+    if (u.emblem) { const ey0 = cy + s * 0.24 + bob, cs = s * 0.2;
+      ctx.fillStyle = p.armorL; ctx.beginPath(); ctx.moveTo(cx, ey0 - cs); ctx.lineTo(cx + cs, ey0); ctx.lineTo(cx, ey0 + cs); ctx.lineTo(cx - cs, ey0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.beginPath(); ctx.moveTo(cx, ey0 - cs); ctx.lineTo(cx + cs, ey0); ctx.lineTo(cx, ey0); ctx.closePath(); ctx.fill();
     } else { ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.beginPath(); ctx.arc(cx, cy + s * 0.18 + bob, s * 0.15, 0, 7); ctx.fill(); }
     // front arm + weapon (on the side facing the enemy)
     const ax = cx + f * s * 0.6;
@@ -234,7 +233,7 @@ export function runBattle(opts) {
   const btnP = wrap.querySelector('[data-a="pause"]'), btnS = wrap.querySelector('[data-a="speed"]');
   btnP.addEventListener("click", () => { paused = !paused; btnP.textContent = paused ? "▶" : "⏸"; });
   btnS.addEventListener("click", () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; btnS.textContent = speed + "×"; });
-  wrap.querySelector('[data-a="exit"]').addEventListener("click", () => { if (ended) close(); else finish(); });
+  wrap.querySelector('[data-a="exit"]').addEventListener("click", close);
   const onResize = () => fit(); window.addEventListener("resize", onResize);
 
   function finish() {
