@@ -347,6 +347,27 @@ b{ font-weight:700; }
 .boost-fab.cd{ filter:grayscale(.7) brightness(.72); }
 @keyframes boostpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(124,255,176,.6) } 50%{ box-shadow:0 0 0 11px rgba(124,255,176,0) } }
 
+/* ---------- squad-vs-monster battle modal ---------- */
+.bfield{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:16px 0 8px; }
+.bside{ flex:1; text-align:center; min-width:0; }
+.brow{ display:flex; gap:4px; justify-content:center; flex-wrap:wrap; min-height:48px; align-items:center; }
+.bhero{ width:38px; height:44px; border-radius:9px; display:grid; place-items:center; font-size:22px;
+  background:radial-gradient(circle at 50% 30%, #2b5a82, #122a42); border:1.5px solid rgba(125,211,252,.5); }
+.bmon{ font-size:58px; line-height:1; filter:drop-shadow(0 5px 12px rgba(255,90,90,.45)); }
+.bmon.hit, .brow.hit{ animation:bhit .3s ease; }
+@keyframes bhit{ 0%,100%{ transform:translateX(0) } 30%{ transform:translateX(-7px) } 60%{ transform:translateX(7px) } }
+.blabel{ font-family:'Oswald'; font-weight:600; font-size:12px; margin-top:6px; color:#cfe6ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bpow{ font-family:'Oswald'; font-weight:700; font-size:13px; color:#ffe2a0; margin-top:2px; }
+.bvsx{ font-family:'Oswald'; font-weight:700; font-size:18px; color:var(--bad); flex:none; padding:0 2px; }
+.bbar{ height:9px; border-radius:5px; background:rgba(5,12,22,.8); overflow:hidden; margin-top:8px; }
+.bbar i{ display:block; height:100%; width:100%; transition:width .34s linear; }
+.bbar i.you{ background:linear-gradient(90deg,#7CFFB0,#36c98a); }
+.bbar i.foe{ background:linear-gradient(90deg,#ff8a3d,#ff5a5a); }
+.bresult{ text-align:center; }
+.bwin{ font-family:'Oswald'; font-weight:700; font-size:26px; color:var(--good); letter-spacing:.05em; }
+.blose{ font-family:'Oswald'; font-weight:700; font-size:26px; color:var(--bad); letter-spacing:.05em; }
+.bnote{ font-size:12px; color:var(--muted); line-height:1.4; margin:4px 0 8px; } .bnote b{ color:#eaf4ff; }
+
 /* ---------- site chrome (not part of the prototype) ---------- */
 .x-social{ position:fixed; right:16px; bottom:16px; z-index:17; width:44px; height:44px; border-radius:13px;
   display:grid; place-items:center; text-decoration:none;

@@ -135,7 +135,7 @@ export function buildServer(store: Store = new InMemoryStore()) {
       req,
       (s, now) => {
         const r = raid(s, now, str(body(req).stageId));
-        return { result: { win: r.win, eff: r.eff, first: r.first, rewards: r.rewards }, ledger: r.ledger };
+        return { result: { win: r.win, eff: r.eff, first: r.first, monsterLevel: r.monsterLevel, enemyPower: r.enemyPower, rewards: r.rewards }, ledger: r.ledger };
       },
       { idempotent: true },
     ),

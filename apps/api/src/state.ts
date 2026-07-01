@@ -24,7 +24,7 @@ export interface GameState {
   heroes: Record<string, { level: number; shards: number }>;
   squad: string[]; // up to 5 equipped hero ids (order = slot)
   research: Record<string, number>; // techId -> level
-  clears: Record<string, { cleared: boolean; cooldownUntil: number }>;
+  clears: Record<string, { cleared: boolean; cooldownUntil: number; monsterLevel?: number }>;
   // active build job
   job: { target: string; kind: "upgrade" | "furnace"; endsAt: number; total: number } | null;
   lastTickAt: number;

@@ -10,11 +10,11 @@ export const QUESTS: Record<"main" | "daily" | "miles", QuestDef[]> = {
     { id: "m5", e: "⛏️", t: "Overclock the Rig to Lv 5", metric: "furnace", tgt: 5, rew: { crystal: 150 } },
     { id: "m6", e: "💰", t: "Reach 15K Net Worth", metric: "power", tgt: 15000, rew: { crystal: 200 } },
     { id: "m7", e: "🔬", t: "Research any tech to Lv 2", metric: "researchLv", tgt: 2, rew: { crystal: 150 } },
-    { id: "m8", e: "🪤", t: "Clear the Rug Pull raid", metric: "stageDone", param: "s3", tgt: 1, rew: { crystal: 250, iron: 6000 } },
+    { id: "m8", e: "👹", t: "Defeat the Rug Golem", metric: "stageDone", param: "s3", tgt: 1, rew: { crystal: 250, iron: 6000 } },
     { id: "m9", e: "🏗️", t: "Upgrade facilities 8 times", metric: "upgrades", tgt: 8, rew: { crystal: 200 } },
     { id: "m10", e: "⛏️", t: "Overclock the Rig to Lv 7", metric: "furnace", tgt: 7, rew: { crystal: 320 } },
     { id: "m11", e: "💰", t: "Reach 150K Net Worth", metric: "power", tgt: 150000, rew: { crystal: 450 } },
-    { id: "m12", e: "💀", t: "Clear The Capitulation", metric: "stageDone", param: "s6", tgt: 1, rew: { crystal: 600, crystalBig: 1 } },
+    { id: "m12", e: "🐲", t: "Defeat the Capitulation Titan", metric: "stageDone", param: "s6", tgt: 1, rew: { crystal: 600, crystalBig: 1 } },
   ],
   daily: [
     { id: "d1", e: "🪂", t: "Claim the Daily Airdrop", metric: "airdrop", tgt: 1, pts: 20, rew: { crystal: 30 } },

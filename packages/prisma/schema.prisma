@@ -89,6 +89,7 @@ model StageClear {
   stageId       String
   cleared       Boolean   @default(false)
   cooldownUntil DateTime?
+  monsterLevel  Int       @default(1)
 
   @@unique([userId, stageId])
 }

@@ -443,34 +443,76 @@ export function initGame(): () => void {
     const sp = squadPower(); const eff = Math.round(sp * bonuses().raid); const now = Date.now();
     let prevCleared = true;
     const rows = STAGES.map((st, i) => { const cl = S.clears[st.id] || {}; const locked = !prevCleared; const onCd = cl.cd && now < cl.cd;
-      const rew = Object.keys(st.rew).map((k) => `${RICON[k]}${ab(st.rew[k])}`).join("  ");
+      const mlevel = cl.mlevel || 1; const epow = CFG.monsterPower(st.power, mlevel);
+      const rewObj = CFG.monsterReward(st.rew, mlevel, !cl.cleared);
+      const rew = Object.keys(rewObj).map((k) => `${RICON[k]}${ab(rewObj[k])}`).join("  ");
+      const beatable = eff >= epow;
       let btn; if (locked) btn = `<button class="rbtn" disabled>🔒</button>`;
         else if (onCd) btn = `<button class="rbtn cd" disabled>${Math.ceil((cl.cd - now) / 1000)}s</button>`;
-        else if (cl.cleared) btn = `<button class="rbtn cleared" data-raid="${st.id}">RAID</button>`;
-        else btn = `<button class="rbtn" data-raid="${st.id}">RAID</button>`;
+        else btn = `<button class="rbtn ${cl.cleared ? "cleared" : ""}" data-raid="${st.id}">${beatable ? "FIGHT" : "TRY"}</button>`;
       const html = `<div class="raid ${locked ? "locked" : ""}"><div class="re">${st.e}</div>
-        <div class="rmid"><div class="rn">${st.name}</div><div class="rsub">Enemy power ${ab(st.power)} ${cl.cleared ? "· ✅ cleared" : ""}</div><div class="rrew">${rew}</div></div>${btn}</div>`;
+        <div class="rmid"><div class="rn">${st.name} <span style="color:var(--token);font-size:11px">Lv ${mlevel}</span></div>
+          <div class="rsub">Power ${ab(epow)}${cl.cleared ? " · ⚔️ ×" + (mlevel - 1) + " defeated" : ""}</div><div class="rrew">${rew}</div></div>${btn}</div>`;
       prevCleared = !!cl.cleared; return html; }).join("");
     $("scrBody").innerHTML = `<div class="squadbar"><div class="sp"><div class="k">YOUR RAID POWER</div><div class="v">⚔️ ${ab(eff)}</div></div>
-      <div style="font-size:11px;color:var(--muted);text-align:right;max-width:150px">Power up heroes in <b style="color:var(--token)">Heroes</b> to clear tougher raids</div></div>
-      <div class="scr-sub">Deploy your squad against bear-market events. Clear to loot $NIVAR & resources. Win = stage repeats on a short cooldown.</div>${rows}`;
+      <div style="font-size:11px;color:var(--muted);text-align:right;max-width:150px">Summon &amp; level heroes in <b style="color:var(--token)">Heroes</b> to beat tougher monsters</div></div>
+      <div class="scr-sub">Send your squad to fight bear-market monsters. Beat one and it <b style="color:#eaf4ff">levels up</b> — stronger, but drops more $NIVAR &amp; loot. Defeat the boss to unlock the next.</div>${rows}`;
     $("scrBody").querySelectorAll("[data-raid]").forEach((el) => el.addEventListener("click", () => raid(STAGES.find((s) => s.id === el.dataset.raid))));
   }
   function raid(st) { const now = Date.now(); const cl = S.clears[st.id] || {}; if (cl.cd && now < cl.cd) { toast("On cooldown", "gold"); return; }
-    const eff = Math.round(squadPower() * bonuses().raid); const win = eff >= st.power; Audio.sfx(win ? "win" : "lose");
-    if (win) { const first = !cl.cleared; grantRaid(st, first); S.clears[st.id] = { cleared: true, cd: now + CFG.ECON.RAID_COOLDOWN_MS }; raidWonFlag = true; stats.raidWins++; dStats.raidWins++; showCombat(st, true, eff, first); }
-    else showCombat(st, false, eff, false);
+    const mlevel = cl.mlevel || 1; const epow = CFG.monsterPower(st.power, mlevel);
+    const eff = Math.round(squadPower() * bonuses().raid); const win = eff >= epow;
+    let rewards = {}, first = false;
+    if (win) { first = !cl.cleared; rewards = CFG.monsterReward(st.rew, mlevel, first);
+      for (const k in rewards) S[k] += rewards[k];
+      S.clears[st.id] = { cleared: true, cd: now + CFG.ECON.RAID_COOLDOWN_MS, mlevel: mlevel + 1 };
+      raidWonFlag = true; stats.raidWins++; dStats.raidWins++; }
+    showBattle(st, win, eff, epow, first, mlevel, rewards);
     refresh(); renderRaids(); }
-  function grantRaid(st, first) { const mult = first ? CFG.ECON.FIRST_CLEAR_MULT : 1; for (const k in st.rew) S[k] += Math.round(st.rew[k] * mult); }
-  function showCombat(st, win, eff, first) {
-    const rew = win ? Object.keys(st.rew).map((k) => `<div class="ri2">${RICON[k]} ${ab(Math.round(st.rew[k] * (first ? CFG.ECON.FIRST_CLEAR_MULT : 1)))}</div>`).join("") : "";
-    $("modalBody").innerHTML = `<div class="mcard" style="border-color:${win ? "rgba(124,255,176,.4)" : "rgba(255,107,107,.4)"}">
-      <div class="mtitle" style="color:${win ? "var(--good)" : "var(--bad)"}">${win ? "VICTORY" : "DEFEAT"}</div>
-      <div class="vsrow"><div class="side"><div class="sl">YOU</div><div class="sv">${ab(eff)}</div></div><div class="vs">VS</div><div class="side"><div class="sl">${st.name}</div><div class="sv" style="color:var(--bad)">${ab(st.power)}</div></div></div>
-      ${win ? `<div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:6px">${first ? "First clear bonus (×1.5)!" : "Loot secured"}</div><div class="rewbox">${rew}</div>`
-        : `<div style="text-align:center;font-size:13px;color:#cfe6ff;line-height:1.4">Squad too weak. Summon & level up heroes, then try again.</div>`}
-      <button class="bigbtn ${win ? "" : "alt"}" id="cbOk" style="margin-top:12px">${win ? "COLLECT" : "BACK"}</button></div>`;
-    $("cbOk").addEventListener("click", closeModal); openModal();
+
+  // Animated squad-vs-monster battle (the outcome is the power check; this is flavor).
+  function showBattle(st, win, eff, epow, first, mlevel, rewards) {
+    const heroes = S.squad.map((id) => HERO(id)).filter(Boolean);
+    const heroRow = (heroes.length ? heroes : [{ e: "🫥" }]).map((h) => `<div class="bhero">${h.e}</div>`).join("");
+    $("modalBody").innerHTML = `<div class="mcard">
+      <div class="mtitle">⚔️ BATTLE</div>
+      <div class="bfield">
+        <div class="bside"><div class="brow">${heroRow}</div><div class="blabel">YOUR SQUAD</div>
+          <div class="bpow">⚔️ ${ab(eff)}</div><div class="bbar"><i id="hpYou" class="you"></i></div></div>
+        <div class="bvsx">VS</div>
+        <div class="bside"><div class="bmon" id="bmon">${st.e}</div><div class="blabel">${st.name} · Lv ${mlevel}</div>
+          <div class="bpow" style="color:var(--bad)">🛡️ ${ab(epow)}</div><div class="bbar"><i id="hpFoe" class="foe"></i></div></div>
+      </div>
+      <div id="bresult" class="bresult"></div></div>`;
+    openModal();
+    const hpYou = $("hpYou"), hpFoe = $("hpFoe"), mon = $("bmon");
+    if (!hpYou) return;
+    hpYou.style.width = "100%"; hpFoe.style.width = "100%";
+    const youEnd = win ? Math.max(15, Math.round((eff - epow) / Math.max(1, eff) * 100)) : 0;
+    const foeEnd = win ? 0 : Math.max(15, Math.round((epow - eff) / Math.max(1, epow) * 100));
+    const rounds = 5; let round = 0;
+    const iv = setInterval(() => {
+      if (!modalOpen || !$("hpYou")) { clearInterval(iv); return; }
+      round++;
+      $("hpYou").style.width = Math.max(0, 100 - (100 - youEnd) * round / rounds) + "%";
+      $("hpFoe").style.width = Math.max(0, 100 - (100 - foeEnd) * round / rounds) + "%";
+      const tgt = win ? mon : $("hpYou").closest(".bside").querySelector(".brow");
+      if (tgt) { tgt.classList.remove("hit"); void tgt.offsetWidth; tgt.classList.add("hit"); }
+      popAt(VW * 0.5, VH * 0.44, "-" + (Math.floor(Math.random() * 40) + 20), win ? "#ff8a3d" : "#ff6b6b");
+      Audio.sfx("click");
+      if (round >= rounds) { clearInterval(iv); endBattle(); }
+    }, 380);
+    function endBattle() {
+      const r = $("bresult"); if (!r) return; Audio.sfx(win ? "win" : "lose"); shake();
+      if (win) { const rew = Object.keys(rewards).map((k) => `<div class="ri2">${RICON[k]} ${ab(rewards[k])}</div>`).join("");
+        r.innerHTML = `<div class="bwin">VICTORY</div>
+          <div class="bnote">${first ? "First-clear bonus ×1.5! · " : ""}${st.e} leveled up to <b>Lv ${mlevel + 1}</b> — tougher &amp; richer next time.</div>
+          <div class="rewbox">${rew}</div><button class="bigbtn" id="bOk" style="margin-top:10px">COLLECT</button>`;
+      } else { r.innerHTML = `<div class="blose">DEFEAT</div>
+          <div class="bnote">Squad too weak (⚔️${ab(eff)} vs 🛡️${ab(epow)}). Summon &amp; level up heroes, then try again.</div>
+          <button class="bigbtn alt" id="bOk" style="margin-top:10px">BACK</button>`; }
+      $("bOk").addEventListener("click", closeModal);
+    }
   }
 
   function renderResearch() {

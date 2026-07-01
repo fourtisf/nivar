@@ -7,14 +7,17 @@ export interface RaidResult {
   win: boolean;
   eff: number;
   first: boolean;
+  monsterLevel: number;
+  enemyPower: number;
   rewards: CFG.ResourceBag;
   ledger: LedgerDraft[];
 }
 
 /**
- * Compute squadPower×raidBonus vs stage power. Enforces sequential unlock +
- * cooldown, grants loot (first-clear ×1.5), and sets the cooldown on a win
- * (handoff §6). The client never sends power/outcome — only the stage id.
+ * squadPower×raidBonus vs the monster's scaled power. Enforces sequential
+ * unlock + cooldown. Each monster has a level: beating it grants scaled loot
+ * (first-clear ×1.5) and levels the monster up (endless progression). The
+ * client never sends power/outcome — only the stage id.
  */
 export function raid(s: GameState, now: number, stageId: string): RaidResult {
   const st = CFG.STAGE_BY_ID[stageId];
@@ -30,23 +33,24 @@ export function raid(s: GameState, now: number, stageId: string): RaidResult {
   const cl = s.clears[stageId];
   if (cl?.cooldownUntil && now < cl.cooldownUntil) throw Errors.onCooldown();
 
+  const monsterLevel = cl?.monsterLevel ?? 1;
+  const enemyPower = CFG.monsterPower(st.power, monsterLevel);
   const eff = Math.round(squadPower(s) * bonuses(s).raid);
-  const win = eff >= st.power;
-  if (!win) return { win: false, eff, first: false, rewards: {}, ledger: [] };
+  const win = eff >= enemyPower;
+  if (!win) return { win: false, eff, first: false, monsterLevel, enemyPower, rewards: {}, ledger: [] };
 
   const first = !cl?.cleared;
-  const mult = first ? CFG.ECON.FIRST_CLEAR_MULT : 1;
-  const rewards: CFG.ResourceBag = {};
+  const rewards = CFG.monsterReward(st.rew, monsterLevel, first);
   const ledger: LedgerDraft[] = [];
-  for (const k in st.rew) {
+  for (const k in rewards) {
     const key = k as CFG.ResourceKey;
-    const amt = Math.round((st.rew[key] ?? 0) * mult);
-    rewards[key] = amt;
+    const amt = rewards[key] ?? 0;
     addRes(s, key, amt);
     if (key === "crystal") ledger.push(nivarLedger(amt, "raid_reward", stageId));
   }
-  s.clears[stageId] = { cleared: true, cooldownUntil: now + CFG.ECON.RAID_COOLDOWN_MS };
+  // monster levels up (stronger next time)
+  s.clears[stageId] = { cleared: true, cooldownUntil: now + CFG.ECON.RAID_COOLDOWN_MS, monsterLevel: monsterLevel + 1 };
   s.stats.raidWins++;
   s.daily.raidWins++;
-  return { win: true, eff, first, rewards, ledger };
+  return { win: true, eff, first, monsterLevel, enemyPower, rewards, ledger };
 }
