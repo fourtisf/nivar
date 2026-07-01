@@ -3,12 +3,12 @@ import { ECON } from "./econ.js";
 
 /** Bear-market MONSTERS. Beat one and it levels up (stronger + better loot). */
 export const STAGES: StageDef[] = [
-  { id: "s1", name: "FUD Goblin", e: "👺", power: 450, rew: { crystal: 60, coal: 2500, iron: 1200 } },
-  { id: "s2", name: "Bear Brute", e: "🐻", power: 1400, rew: { crystal: 90, wood: 3000, food: 3000 } },
-  { id: "s3", name: "Rug Golem", e: "👹", power: 3000, rew: { crystal: 140, iron: 4000, coal: 5000 } },
-  { id: "s4", name: "Whale Kraken", e: "🐙", power: 6500, rew: { crystal: 220, wood: 8000, iron: 6000 } },
-  { id: "s5", name: "Liquidation Reaper", e: "🧟", power: 14000, rew: { crystal: 360, coal: 18000, food: 14000 } },
-  { id: "s6", name: "Capitulation Titan", e: "🐲", power: 30000, rew: { crystal: 600, iron: 24000, wood: 24000 } },
+  { id: "s1", name: "FUD Goblin", e: "👺", power: 240, rew: { crystal: 60, coal: 2500, iron: 1200 } },
+  { id: "s2", name: "Bear Brute", e: "🐻", power: 620, rew: { crystal: 90, wood: 3000, food: 3000 } },
+  { id: "s3", name: "Rug Golem", e: "👹", power: 1500, rew: { crystal: 140, iron: 4000, coal: 5000 } },
+  { id: "s4", name: "Whale Kraken", e: "🐙", power: 3400, rew: { crystal: 220, wood: 8000, iron: 6000 } },
+  { id: "s5", name: "Liquidation Reaper", e: "🧟", power: 7200, rew: { crystal: 360, coal: 18000, food: 14000 } },
+  { id: "s6", name: "Capitulation Titan", e: "🐲", power: 15000, rew: { crystal: 600, iron: 24000, wood: 24000 } },
 ];
 
 export const STAGE_BY_ID: Record<string, StageDef> = Object.fromEntries(

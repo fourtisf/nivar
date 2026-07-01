@@ -415,7 +415,13 @@ export function initGame(): () => void {
   }
   function quickLevel(id) { const o = S.heroes[id]; if (!o) return; const h = HERO(id); const cost = CFG.heroLevelUpCrystalCost(o.level);
     if (S.crystal < cost) { toast("Need 💎 " + ab(cost) + " to level up", "gold"); return; }
-    S.crystal -= cost; o.level++; Audio.sfx("level"); toast(h.name + " → Lv " + o.level + " ⚔️", "good"); refresh(); if (curScreen === "heroes") renderHeroes(); }
+    const prev = heroPower(id); S.crystal -= cost; o.level++; const gain = heroPower(id) - prev;
+    Audio.sfx("level"); powPop(gain, o.level); toast(h.name + " → Lv " + o.level + " · +" + ab(gain) + " ⚔️", "good"); refresh(); if (curScreen === "heroes") renderHeroes(); }
+  // Floating "+N ⚔️ POWER" burst when a hero levels up.
+  function powPop(gain, lv) { const el = document.createElement("div"); el.className = "powpop";
+    el.innerHTML = `<div class="pp-lv">LEVEL ${lv}</div><div class="pp-g">+${ab(gain)} ⚔️</div><div class="pp-t">POWER UP</div>`;
+    game.appendChild(el); const fl = $("flash"); if (fl) { fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); }
+    setTimeout(() => el.remove(), 1300); }
   function openHero(id) { const h = HERO(id), o = S.heroes[id]; const eq = S.squad.includes(id);
     const shardCost = CFG.heroLevelUpShardCost(o.level), gemCost = CFG.heroLevelUpCrystalCost(o.level);
     const curPow = heroPower(id), nextPow = CFG.heroPower(id, o.level + 1); const gain = nextPow - curPow;
@@ -434,7 +440,7 @@ export function initGame(): () => void {
       <div class="note">${eq ? "Equipped in your squad." : (S.squad.length >= 5 ? "Squad full (5/5) — unequip someone first." : "Equip to activate the buff and add power.")} Level up with 💎 anytime, or spend 🧩 shards from duplicate summons.</div>`;
     $("eqBtn").addEventListener("click", () => { if (eq) { S.squad = S.squad.filter((x) => x !== id); } else { if (S.squad.length >= 5) { toast("Squad full (5/5)", "gold"); return; } S.squad.push(id); }
       closeSheet(); refresh(); openScreen("heroes"); });
-    function levelUp() { o.level++; Audio.sfx("level"); toast(h.name + " → Lv " + o.level, "good"); closeSheet(); refresh(); openScreen("heroes"); }
+    function levelUp() { const prev = heroPower(id); o.level++; const gain = heroPower(id) - prev; Audio.sfx("level"); powPop(gain, o.level); toast(h.name + " → Lv " + o.level + " · +" + ab(gain) + " ⚔️", "good"); closeSheet(); refresh(); openScreen("heroes"); }
     $("lvGem").addEventListener("click", () => { if (S.crystal < gemCost) { toast("Not enough 💎", "gold"); return; } S.crystal -= gemCost; levelUp(); });
     $("lvShard").addEventListener("click", () => { if (o.shards < shardCost) { toast("Not enough shards", "gold"); return; } o.shards -= shardCost; levelUp(); });
     openSheet(); }

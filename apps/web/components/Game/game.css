@@ -269,6 +269,15 @@ b{ font-weight:700; }
 @keyframes tin{ from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} } @keyframes tout{ to{opacity:0;transform:translateY(-10px)} }
 #flash{ position:fixed; inset:0; z-index:38; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 45%, rgba(255,180,80,.5), transparent 60%); }
 #flash.go{ animation:flashfx 1s ease forwards; } @keyframes flashfx{ 0%{opacity:0} 25%{opacity:1} 100%{opacity:0} }
+/* hero level-up power burst */
+.powpop{ position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); z-index:41; text-align:center; pointer-events:none;
+  animation:ppop 1.3s cubic-bezier(.2,.9,.3,1.2) forwards; }
+.powpop .pp-lv{ font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; letter-spacing:.32em; color:#bff5dc; }
+.powpop .pp-g{ font-family:'Oswald',sans-serif; font-weight:800; font-size:44px; line-height:1.05; color:#ffe27a;
+  text-shadow:0 0 22px rgba(255,180,40,.9), 0 3px 8px rgba(0,0,0,.6); }
+.powpop .pp-t{ font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; letter-spacing:.4em; color:#ffce54; margin-top:2px; }
+@keyframes ppop{ 0%{ opacity:0; transform:translate(-50%,-40%) scale(.5) } 18%{ opacity:1; transform:translate(-50%,-50%) scale(1.12) }
+  32%{ transform:translate(-50%,-50%) scale(1) } 75%{ opacity:1; transform:translate(-50%,-64%) scale(1) } 100%{ opacity:0; transform:translate(-50%,-80%) scale(.96) } }
 .levelup{ position:fixed; left:50%; top:40%; transform:translate(-50%,-50%) scale(.6); z-index:39; text-align:center; opacity:0; pointer-events:none; }
 .levelup.go{ animation:lu 1.7s ease forwards; }
 .levelup .l1{ font-family:'Oswald'; font-weight:700; font-size:13px; letter-spacing:.45em; color:#ffd089; text-shadow:0 0 18px rgba(255,120,30,.8); }
