@@ -782,6 +782,37 @@ export function initGame(): () => void {
     setTimeout(() => { if (!taken) { el.remove(); collCount--; } }, 8000);
   }
 
+  // Persistent save (localStorage) — keeps progress across reloads.
+  const SAVE_KEY = "nivar_save_v1";
+  function saveState() {
+    try {
+      const data = { v: 1, t: Date.now(),
+        S: { food: S.food, wood: S.wood, coal: S.coal, iron: S.iron, crystal: S.crystal, warmth: S.warmth,
+          furnace: S.furnace, pop: S.pop, popCap: S.popCap, heroes: S.heroes, squad: S.squad, research: S.research, clears: S.clears },
+        bl: blMap(), flags: { genesisClaimed, airdropAt }, stats, dStats };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY); if (!raw) return false;
+      const d = JSON.parse(raw); if (!d || !d.S) return false;
+      const n = (v, f) => (typeof v === "number" && isFinite(v) ? v : f);
+      S.food = n(d.S.food, S.food); S.wood = n(d.S.wood, S.wood); S.coal = n(d.S.coal, S.coal); S.iron = n(d.S.iron, S.iron);
+      S.crystal = n(d.S.crystal, S.crystal); S.warmth = n(d.S.warmth, S.warmth); S.furnace = n(d.S.furnace, S.furnace);
+      S.pop = n(d.S.pop, S.pop); S.popCap = n(d.S.popCap, S.popCap);
+      if (d.S.heroes && typeof d.S.heroes === "object") S.heroes = d.S.heroes;
+      if (Array.isArray(d.S.squad)) S.squad = d.S.squad.filter((id) => HERO(id));
+      if (d.S.research && typeof d.S.research === "object") S.research = d.S.research;
+      if (d.S.clears && typeof d.S.clears === "object") S.clears = d.S.clears;
+      if (d.bl) for (const b of BUILDINGS) { if (typeof d.bl[b.id] === "number") b.lv = d.bl[b.id]; }
+      if (d.flags) { genesisClaimed = !!d.flags.genesisClaimed; airdropAt = d.flags.airdropAt || 0; }
+      if (d.stats) Object.assign(stats, d.stats);
+      if (d.dStats) Object.assign(dStats, d.dStats);
+      return true;
+    } catch (e) { return false; }
+  }
+
   // Offline earnings ("welcome back")
   const LAST_KEY = "nivar_lastVisit";
   function saveVisit() { try { localStorage.setItem(LAST_KEY, "" + Date.now()); } catch (e) {} }
@@ -801,14 +832,18 @@ export function initGame(): () => void {
       <button class="bigbtn" id="obOk" style="margin-top:12px">COLLECT</button></div>`;
     $("obOk").addEventListener("click", () => { closeModal(); shake(); }); openModal(); refresh();
   }
-  document.addEventListener("visibilitychange", () => { if (document.hidden) saveVisit(); });
+  const _onHide = () => { if (document.hidden) { saveState(); saveVisit(); } };
+  document.addEventListener("visibilitychange", _onHide);
+  const _onUnload = () => { saveState(); saveVisit(); };
+  window.addEventListener("beforeunload", _onUnload); window.addEventListener("pagehide", _onUnload);
 
   /* boot */
   for (const id in CFG.INITIAL_HEROES) S.heroes[id] = { ...CFG.INITIAL_HEROES[id] };
   S.squad = [...CFG.INITIAL_SQUAD];
+  const _hadSave = loadState(); // restore progress if a save exists (overrides initial defaults)
   buildOverlay(); fit(); initFlakes(); S.popCap = shelterPopCap(); power = calcPower(); refresh(); updateTaskBar(); _raf = requestAnimationFrame(frame);
   _timeouts.push(setTimeout(() => { $("hint").style.opacity = "0"; }, 6000));
-  let _firstVisit = true; try { _firstVisit = !localStorage.getItem(LAST_KEY); } catch (e) {}
+  const _firstVisit = !_hadSave;
   if (_firstVisit) {
     _timeouts.push(setTimeout(coachStart, 450));
     _timeouts.push(setTimeout(() => toast("gm Operator. Survive the winter, stack $NIVAR.", "gold"), 500));
@@ -816,8 +851,8 @@ export function initGame(): () => void {
     _timeouts.push(setTimeout(offlineEarnings, 500));
     _timeouts.push(setTimeout(() => toast("Welcome back, Operator.", "good"), 800));
   }
-  saveVisit();
-  _intervals.push(setInterval(saveVisit, 5000));
+  saveVisit(); saveState();
+  _intervals.push(setInterval(() => { saveVisit(); saveState(); }, 5000));
   _intervals.push(setInterval(updateBoostFab, 250));
   _intervals.push(setInterval(spawnCollectible, 13000));
   _timeouts.push(setTimeout(spawnCollectible, 3500));
@@ -825,9 +860,12 @@ export function initGame(): () => void {
 
   /* cleanup for React unmount / fast-refresh */
   return function dispose() {
+    saveState(); saveVisit();
     cancelAnimationFrame(_raf);
     for (const i of _intervals) clearInterval(i);
     for (const t of _timeouts) clearTimeout(t);
     if (_onResize) window.removeEventListener("resize", _onResize);
+    document.removeEventListener("visibilitychange", _onHide);
+    window.removeEventListener("beforeunload", _onUnload); window.removeEventListener("pagehide", _onUnload);
   };
 }
