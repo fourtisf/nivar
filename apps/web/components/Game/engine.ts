@@ -80,6 +80,7 @@ export function initGame(): () => void {
   function shelterPopCap() { return CFG.shelterPopCap({ buildingLevels: blMap(), furnace: S.furnace, crewBonus: bonuses().crew }); }
   function heroPower(id) { const o = S.heroes[id]; return o ? CFG.heroPower(id, o.level) : 0; }
   function squadPower() { return S.squad.reduce((a, id) => a + heroPower(id), 0); }
+  function squadLevel() { const lv = S.squad.map((id) => (S.heroes[id] ? S.heroes[id].level : 1)); return lv.length ? Math.round(lv.reduce((a, b) => a + b, 0) / lv.length) : 1; }
   function calcPower() { return CFG.calcPower({ furnace: S.furnace, buildingLevels: blMap(), pop: S.pop, squadPower: squadPower(), research: S.research }); }
   function prodPerSec(b) { return CFG.prodPerSec(b, b.lv, S.warmth, bonuses()); }
   function tempLabel() { return CFG.tempLabel(S.warmth); }
@@ -471,23 +472,29 @@ export function initGame(): () => void {
     refresh(); renderRaids(); }
 
   // Animated squad-vs-monster battle (the outcome is the power check; this is flavor).
+  function battlePop(rightSide, text, color) {
+    const card = $("modalBody").querySelector(".mcard"); if (!card) return;
+    const el = document.createElement("div"); el.textContent = text;
+    el.style.cssText = `position:absolute;z-index:5;top:118px;${rightSide ? "right:22%" : "left:22%"};font-family:Oswald;font-weight:700;font-size:21px;color:${color};text-shadow:0 2px 8px #000;pointer-events:none;transition:all .7s ease;`;
+    card.appendChild(el); requestAnimationFrame(() => { el.style.top = "68px"; el.style.opacity = "0"; }); setTimeout(() => el.remove(), 700);
+  }
   function showBattle(st, win, eff, epow, first, mlevel, rewards) {
     const heroes = S.squad.map((id) => HERO(id)).filter(Boolean);
     const heroRow = (heroes.length ? heroes : [{ e: "🫥" }]).map((h) => `<div class="bhero">${h.e}</div>`).join("");
+    const glow = ({ s1: "#ff6b6b", s2: "#e0a060", s3: "#b06bff", s4: "#56e0ff", s5: "#7CFFB0", s6: "#ffce54" })[st.id] || "#ff6b6b";
     $("modalBody").innerHTML = `<div class="mcard">
       <div class="mtitle">⚔️ BATTLE</div>
       <div class="bfield">
-        <div class="bside"><div class="brow">${heroRow}</div><div class="blabel">YOUR SQUAD</div>
+        <div class="bside"><div class="brow" id="brow">${heroRow}</div><div class="blabel">YOUR SQUAD · Lv ${squadLevel()}</div>
           <div class="bpow">⚔️ ${ab(eff)}</div><div class="bbar"><i id="hpYou" class="you"></i></div></div>
         <div class="bvsx">VS</div>
-        <div class="bside"><div class="bmon" id="bmon">${st.e}</div><div class="blabel">${st.name} · Lv ${mlevel}</div>
+        <div class="bside"><div class="bmon" id="bmon" style="filter:drop-shadow(0 6px 16px ${glow}cc)">${st.e}</div><div class="blabel">${st.name} · Lv ${mlevel}</div>
           <div class="bpow" style="color:var(--bad)">🛡️ ${ab(epow)}</div><div class="bbar"><i id="hpFoe" class="foe"></i></div></div>
       </div>
       <div id="bresult" class="bresult"></div></div>`;
     openModal();
-    const hpYou = $("hpYou"), hpFoe = $("hpFoe"), mon = $("bmon");
-    if (!hpYou) return;
-    hpYou.style.width = "100%"; hpFoe.style.width = "100%";
+    if (!$("hpYou")) return;
+    $("hpYou").style.width = "100%"; $("hpFoe").style.width = "100%";
     const youEnd = win ? Math.max(15, Math.round((eff - epow) / Math.max(1, eff) * 100)) : 0;
     const foeEnd = win ? 0 : Math.max(15, Math.round((epow - eff) / Math.max(1, epow) * 100));
     const rounds = 5; let round = 0;
@@ -496,9 +503,11 @@ export function initGame(): () => void {
       round++;
       $("hpYou").style.width = Math.max(0, 100 - (100 - youEnd) * round / rounds) + "%";
       $("hpFoe").style.width = Math.max(0, 100 - (100 - foeEnd) * round / rounds) + "%";
-      const tgt = win ? mon : $("hpYou").closest(".bside").querySelector(".brow");
-      if (tgt) { tgt.classList.remove("hit"); void tgt.offsetWidth; tgt.classList.add("hit"); }
-      popAt(VW * 0.5, VH * 0.44, "-" + (Math.floor(Math.random() * 40) + 20), win ? "#ff8a3d" : "#ff6b6b");
+      const heroAtk = round % 2 === 1; const brow = $("brow"), bmon = $("bmon");
+      const atkEl = heroAtk ? brow : bmon, hitEl = heroAtk ? bmon : brow;
+      if (atkEl) { atkEl.classList.remove("atk"); void atkEl.offsetWidth; atkEl.classList.add("atk"); }
+      if (hitEl) { hitEl.classList.remove("hit"); void hitEl.offsetWidth; hitEl.classList.add("hit"); }
+      battlePop(heroAtk, "-" + (Math.floor(Math.random() * 40) + 20), heroAtk ? "#ffd66a" : "#ff6b6b");
       Audio.sfx("click");
       if (round >= rounds) { clearInterval(iv); endBattle(); }
     }, 380);
