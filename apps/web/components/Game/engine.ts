@@ -211,8 +211,8 @@ export function initGame(): () => void {
     make(FURNACE); for (const b of BUILDINGS) make(b); }
   function positionOverlays() { const place = (b, el, lift) => { const p = w2s(b.gx, b.gy); el.style.left = p.x + "px"; el.style.top = (p.y - lift) + "px"; };
     place(FURNACE, spots["furnace"], 86 + S.furnace * 2); for (const b of BUILDINGS) place(b, spots[b.id], 58 + b.lv * 2); }
-  function refreshOverlay() { const set = (b, el) => { el.querySelector(".lvn").textContent = b.lv; const busy = job && job.target === b.id; el.classList.toggle("busy", busy);
-    el.querySelector(".hammer").style.display = busy ? "block" : "none"; if (busy) { const pct = clamp((1 - (job.endsAt - Date.now()) / job.total) * 100, 0, 100); el.querySelector(".pbar i").style.width = pct + "%"; el.querySelector(".lvn").textContent = "→" + (b.lv + 1); } };
+  function refreshOverlay() { const set = (b, el) => { const lvl = b.id === "furnace" ? S.furnace : b.lv; el.querySelector(".lvn").textContent = lvl; const busy = job && job.target === b.id; el.classList.toggle("busy", busy);
+    el.querySelector(".hammer").style.display = busy ? "block" : "none"; if (busy) { const pct = clamp((1 - (job.endsAt - Date.now()) / job.total) * 100, 0, 100); el.querySelector(".pbar i").style.width = pct + "%"; el.querySelector(".lvn").textContent = "→" + (lvl + 1); } };
     set(FURNACE, spots["furnace"]); for (const b of BUILDINGS) set(b, spots[b.id]); }
 
   /* ============================================================
