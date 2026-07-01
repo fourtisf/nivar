@@ -232,7 +232,7 @@ export function runBattle(opts) {
 
   const btnP = wrap.querySelector('[data-a="pause"]'), btnS = wrap.querySelector('[data-a="speed"]');
   btnP.addEventListener("click", () => { paused = !paused; btnP.textContent = paused ? "▶" : "⏸"; });
-  btnS.addEventListener("click", () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; btnS.textContent = speed + "×"; });
+  btnS.addEventListener("click", () => { speed = speed >= 4 ? 1 : speed + 1; btnS.textContent = speed + "×"; });
   wrap.querySelector('[data-a="exit"]').addEventListener("click", close);
   const onResize = () => fit(); window.addEventListener("resize", onResize);
 
