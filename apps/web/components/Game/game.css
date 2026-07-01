@@ -325,6 +325,10 @@ b{ font-weight:700; }
 /* ---------- desktop: full-screen map, controls stay in a centered 480px column ----------
    (#game-scoped so these win over the base .hud/.task-bar/.bottom-nav rules) */
 @media (min-width:520px){
+  /* Frame the map: the snowfield starts at the tile color (so the base edge
+     blends seamlessly, no "floating island") and vignettes to winter-night at
+     the screen edges instead of a flat grey void. */
+  #game{ background: radial-gradient(ellipse farthest-corner at 50% 45%, #cfdeef 0%, #b7ccdf 28%, #9fb8cf 46%, #5f788f 66%, #22384f 82%, #0b1826 100%); }
   #game > .hud-top{ left:calc(50% - 240px); right:calc(50% - 240px); }
   #game > .left-cards{ left:calc(50% - 232px); }
   #game > .right-rail{ right:calc(50% - 234px); }
