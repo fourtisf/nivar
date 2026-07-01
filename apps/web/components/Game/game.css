@@ -9,13 +9,21 @@
 html,body{ height:100%; overflow:hidden; }
 body{ font-family:'Rajdhani',system-ui,sans-serif; background:#06101c; color:var(--snow);
   user-select:none; display:flex; align-items:center; justify-content:center; }
+/* branded backdrop shows in the desktop margins around the centered game panel */
+@media (min-width:520px){ body{ background:radial-gradient(120% 90% at 50% -8%, #103358 0%, #081a2c 44%, #050d16 100%); } }
 button{ font-family:inherit; color:inherit; border:0; background:none; cursor:pointer; }
 button:focus-visible{ outline:2px solid var(--frost); outline-offset:1px; }
 b{ font-weight:700; }
 ::-webkit-scrollbar{ width:0; height:0; }
 
-#game{ position:relative; width:100vw; height:100dvh;
+#game{ position:relative; width:min(100vw,480px); height:min(100dvh,940px);
   overflow:hidden; background:#9fb8cf; box-shadow:0 30px 90px rgba(0,0,0,.6); touch-action:none; }
+/* Desktop: present the game as a clean centered panel (frost frame + glow) on a
+   branded backdrop, with a NIVAR brand rail in the left margin. */
+@media (min-width:520px){
+  #game{ border-radius:26px;
+    box-shadow:0 30px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(125,211,252,.28), 0 0 70px rgba(86,224,255,.14); }
+}
 #world{ position:absolute; inset:0; z-index:1; }
 #overlay{ position:absolute; inset:0; z-index:2; pointer-events:none; }
 
@@ -321,20 +329,22 @@ b{ font-weight:700; }
 .x-social:active{ transform:translateY(0); }
 .x-social svg{ width:21px; height:21px; fill:#eaf4ff; }
 @media (max-width:540px){ .x-social{ bottom:120px; right:12px; width:40px; height:40px; } .x-social svg{ width:19px; height:19px; } }
+/* Desktop has the brand rail (with its own X link) — hide the floating one. */
+@media (min-width:900px){ .x-social{ display:none; } }
 
-/* ---------- desktop: full-screen map, controls stay in a centered 480px column ----------
-   (#game-scoped so these win over the base .hud/.task-bar/.bottom-nav rules) */
-@media (min-width:520px){
-  /* Frame the map: the snowfield starts at the tile color (so the base edge
-     blends seamlessly, no "floating island") and vignettes to winter-night at
-     the screen edges instead of a flat grey void. */
-  #game{ background: radial-gradient(ellipse farthest-corner at 50% 45%, #cfdeef 0%, #b7ccdf 28%, #9fb8cf 46%, #5f788f 66%, #22384f 82%, #0b1826 100%); }
-  #game > .hud-top{ left:calc(50% - 240px); right:calc(50% - 240px); }
-  #game > .left-cards{ left:calc(50% - 232px); }
-  #game > .right-rail{ right:calc(50% - 234px); }
-  #game > .task-bar{ left:calc(50% - 232px); right:calc(50% - 232px); }
-  #game > .bottom-nav{ left:calc(50% - 240px); right:calc(50% - 240px);
-    border-left:1px solid rgba(125,211,252,.12); border-right:1px solid rgba(125,211,252,.12); }
-  #game > .hintdrag{ bottom:132px; }
-  #screen .scr-head, #screen .scr-body{ width:480px; margin-left:auto; margin-right:auto; }
-}
+/* ---------- desktop brand rail (site chrome, left margin) ---------- */
+.brand-rail{ position:fixed; left:0; top:0; bottom:0; width:calc(50% - 262px); min-width:280px;
+  display:none; flex-direction:column; justify-content:center; align-items:flex-end; text-align:right;
+  padding:0 clamp(24px,4vw,64px); z-index:5; pointer-events:none; }
+@media (min-width:900px){ .brand-rail{ display:flex; } }
+.brand-rail > *{ pointer-events:auto; }
+.brand-logo{ width:min(360px,92%); height:auto; filter:drop-shadow(0 8px 30px rgba(86,224,255,.18)); }
+.brand-tag{ font-family:'Rajdhani',system-ui,sans-serif; color:#9fb6cc; font-size:16.5px; line-height:1.55;
+  max-width:360px; margin-top:22px; font-weight:600; }
+.brand-tag b{ color:#eaf4ff; } .brand-tag .tk{ color:var(--token); font-weight:700; }
+.brand-links{ display:flex; gap:14px; margin-top:24px; align-items:center; font-family:'Oswald',sans-serif; font-weight:700; font-size:14px; }
+.brand-links a, .brand-links span{ display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 16px; border-radius:12px;
+  color:#eaf4ff; text-decoration:none; letter-spacing:.06em;
+  background:linear-gradient(180deg, rgba(12,30,48,.9), rgba(7,18,30,.9)); border:1px solid rgba(125,211,252,.3); transition:border-color .2s, transform .12s; }
+.brand-links a:hover{ border-color:rgba(124,255,176,.6); transform:translateY(-2px); }
+.brand-links .url{ color:var(--token); border-color:rgba(124,255,176,.4); }

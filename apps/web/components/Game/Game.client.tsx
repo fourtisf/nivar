@@ -101,6 +101,16 @@ export default function Game() {
     <>
       <div style={{ display: "contents" }} dangerouslySetInnerHTML={{ __html: GAME_MARKUP }} />
       {/* Site chrome — page-level, outside the game DOM, so game parity is untouched. */}
+      <aside className="brand-rail" aria-label="NIVAR">
+        <img className="brand-logo" src="/brand/nivar-logo.svg" alt="NIVAR — Survive the Winter" width={360} height={97} />
+        <p className="brand-tag">
+          Crypto-winter survival <b>GameFi on Solana</b>. Build your base, summon CT legends, raid the bear &amp; stack <span className="tk">$NIVAR</span>.
+        </p>
+        <div className="brand-links">
+          <a href="https://x.com/Nivarfun" target="_blank" rel="noopener noreferrer">𝕏 @Nivarfun</a>
+          <span className="url">nivar.fun</span>
+        </div>
+      </aside>
       <a className="x-social" href="https://x.com/Nivarfun" target="_blank" rel="noopener noreferrer" aria-label="NIVAR on X">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
