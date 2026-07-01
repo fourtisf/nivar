@@ -159,7 +159,12 @@ b{ font-weight:700; }
 .hcardx .hpow{ font-family:'Oswald'; font-weight:700; font-size:11px; color:#ffe2a0; margin-top:2px; }
 .hcardx.locked{ filter:grayscale(1) brightness(.5); border-color:rgba(125,211,252,.15)!important; }
 .hcardx.locked .he{ opacity:.4; }
-.shardtag{ position:absolute; bottom:5px; right:6px; font-size:9px; font-weight:700; color:var(--neon); }
+.shardtag{ position:absolute; top:5px; right:26px; font-size:9px; font-weight:700; color:var(--neon); }
+.hup{ display:block; width:100%; margin-top:7px; height:26px; border-radius:8px; cursor:pointer;
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.02em; color:#08231a;
+  background:linear-gradient(180deg,#ffbf49,#ff8a1e); box-shadow:0 4px 12px rgba(255,150,30,.28); transition:transform .1s, filter .2s; }
+.hup:active{ transform:translateY(1px); }
+.hup.off{ background:linear-gradient(180deg, rgba(125,211,252,.16), rgba(125,211,252,.06)); color:var(--frost); box-shadow:none; }
 
 /* raid list */
 .raid{ display:flex; align-items:center; gap:11px; padding:11px; border-radius:14px; margin-bottom:9px;

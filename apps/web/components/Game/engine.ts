@@ -397,18 +397,24 @@ export function initGame(): () => void {
       else slots.push(`<div class="slot">＋</div>`); }
     const cards = HEROES_POOL.map((h) => { const o = S.heroes[h.id]; const eq = S.squad.includes(h.id);
       if (!o) return `<div class="hcardx locked" style="border-color:${RCOL[h.rarity]}"><div class="he">${h.e}</div><div class="hn">???</div><div class="hr" style="color:${RCOL[h.rarity]}">${h.rarity}</div></div>`;
+      const gemCost = CFG.heroLevelUpCrystalCost(o.level); const canUp = S.crystal >= gemCost;
       return `<div class="hcardx" style="border-color:${RCOL[h.rarity]};box-shadow:0 0 16px ${RCOL[h.rarity]}22" data-hero="${h.id}">
         <div class="hlv">Lv ${o.level}</div>${eq ? '<div class="heq">✅</div>' : ""}
         <div class="he">${h.e}</div><div class="hn">${h.name}</div><div class="hr" style="color:${RCOL[h.rarity]}">${h.rarity}</div>
-        <div class="hpow">⚔️ ${ab(heroPower(h.id))}</div>${o.shards > 0 ? `<div class="shardtag">🧩${o.shards}</div>` : ""}</div>`; }).join("");
+        <div class="hpow">⚔️ ${ab(heroPower(h.id))}</div>${o.shards > 0 ? `<div class="shardtag">🧩${o.shards}</div>` : ""}
+        <button class="hup ${canUp ? "" : "off"}" data-up="${h.id}">⬆ LEVEL UP · 💎${ab(gemCost)}</button></div>`; }).join("");
     $("scrBody").innerHTML = `
       <div class="squadbar"><div class="sp"><div class="k">SQUAD POWER</div><div class="v">⚔️ ${ab(squadPower())}</div></div><div class="slots">${slots.join("")}</div></div>
       <div class="btn-row"><button class="sumbtn" id="sum1">SUMMON ×1<small>💎 100</small></button><button class="sumbtn ten" id="sum10">SUMMON ×10<small>💎 900</small></button></div>
-      <div class="scr-sub">Pull CT legends. Equip up to 5 — their buffs boost your economy & raids.</div>
+      <div class="scr-sub">Pull CT legends, then <b style="color:var(--token)">⬆ LEVEL UP</b> to raise their power. Equip up to 5 — their buffs boost your economy &amp; raids.</div>
       <div class="hgrid">${cards}</div>`;
     $("sum1").addEventListener("click", () => pull(1)); $("sum10").addEventListener("click", () => pull(10));
+    $("scrBody").querySelectorAll("[data-up]").forEach((el) => el.addEventListener("click", (e) => { e.stopPropagation(); quickLevel(el.dataset.up); }));
     $("scrBody").querySelectorAll("[data-hero]").forEach((el) => el.addEventListener("click", () => openHero(el.dataset.hero)));
   }
+  function quickLevel(id) { const o = S.heroes[id]; if (!o) return; const h = HERO(id); const cost = CFG.heroLevelUpCrystalCost(o.level);
+    if (S.crystal < cost) { toast("Need 💎 " + ab(cost) + " to level up", "gold"); return; }
+    S.crystal -= cost; o.level++; Audio.sfx("level"); toast(h.name + " → Lv " + o.level + " ⚔️", "good"); refresh(); if (curScreen === "heroes") renderHeroes(); }
   function openHero(id) { const h = HERO(id), o = S.heroes[id]; const eq = S.squad.includes(id);
     const shardCost = CFG.heroLevelUpShardCost(o.level), gemCost = CFG.heroLevelUpCrystalCost(o.level);
     const curPow = heroPower(id), nextPow = CFG.heroPower(id, o.level + 1); const gain = nextPow - curPow;
