@@ -383,8 +383,8 @@ export function initGame(): () => void {
   function setNav(name) { document.querySelectorAll(".nav").forEach((n) => n.classList.toggle("active", n.dataset.nav === name)); }
   function openScreen(name) {
     Audio.sfx("click");
-    if (name === "base") { curScreen = "base"; setNav("base"); screen.classList.remove("on"); return; }
-    curScreen = name; setNav(name); $("scrBal").textContent = Math.floor(S.crystal).toLocaleString("en-US");
+    if (name === "base") { curScreen = "base"; setNav("base"); screen.classList.remove("on"); document.body.classList.remove("nv-screen-open"); return; }
+    curScreen = name; setNav(name); document.body.classList.add("nv-screen-open"); $("scrBal").textContent = Math.floor(S.crystal).toLocaleString("en-US");
     const T = { heroes: "Heroes", raids: "Raids", research: "Research", shop: "Shop", quests: "Quests" }[name]; $("scrTitle").textContent = T;
     ({ heroes: renderHeroes, raids: renderRaids, research: renderResearch, shop: renderShop, quests: renderQuests })[name]();
     screen.classList.add("on"); coachFire("screen:" + name);
@@ -867,5 +867,6 @@ export function initGame(): () => void {
     if (_onResize) window.removeEventListener("resize", _onResize);
     document.removeEventListener("visibilitychange", _onHide);
     window.removeEventListener("beforeunload", _onUnload); window.removeEventListener("pagehide", _onUnload);
+    document.body.classList.remove("nv-screen-open");
   };
 }

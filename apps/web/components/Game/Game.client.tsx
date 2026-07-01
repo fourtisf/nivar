@@ -85,6 +85,34 @@ const GAME_MARKUP = `
 <div class="levelup" id="levelup"><div class="l1">RIG OVERCLOCK</div><div class="l2" id="luNum">2</div></div>
 `;
 
+// Paste the $NIVAR mint address here when the token is live — the chip
+// turns into a one-tap copy automatically. Leave "" for "Coming soon".
+const CONTRACT_ADDRESS = "";
+
+function ContractChip({ variant }: { variant: "rail" | "float" }) {
+  const [copied, setCopied] = useState(false);
+  const live = CONTRACT_ADDRESS.length > 0;
+  const short = live ? CONTRACT_ADDRESS.slice(0, 4) + "…" + CONTRACT_ADDRESS.slice(-4) : "Coming soon";
+  const onClick = async () => {
+    try {
+      await navigator.clipboard.writeText(live ? CONTRACT_ADDRESS : "$NIVAR CA — coming soon. Follow @Nivarfun for the launch.");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {}
+  };
+  return (
+    <button
+      className={`ca-chip ca-${variant}${live ? " live" : ""}`}
+      onClick={onClick}
+      title={live ? "Copy $NIVAR contract address" : "Contract address — coming soon"}
+    >
+      <span className="ca-lbl">CA</span>
+      <span className="ca-val">{copied ? "Copied ✓" : short}</span>
+      <span className="ca-ico" aria-hidden="true">{copied ? "✓" : "⧉"}</span>
+    </button>
+  );
+}
+
 function MuteButton() {
   const [muted, setMuted] = useState(false);
   useEffect(() => setMuted(Audio.isMuted()), []);
@@ -126,7 +154,9 @@ export default function Game() {
           <a href="https://x.com/Nivarfun" target="_blank" rel="noopener noreferrer">𝕏 @Nivarfun</a>
           <span className="url">nivar.fun</span>
         </div>
+        <ContractChip variant="rail" />
       </aside>
+      <ContractChip variant="float" />
       <a className="x-social" href="https://x.com/Nivarfun" target="_blank" rel="noopener noreferrer" aria-label="NIVAR on X">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />

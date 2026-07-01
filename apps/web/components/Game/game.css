@@ -477,3 +477,22 @@ b{ font-weight:700; }
   background:linear-gradient(180deg, rgba(12,30,48,.9), rgba(7,18,30,.9)); border:1px solid rgba(125,211,252,.3); transition:border-color .2s, transform .12s; }
 .brand-links a:hover{ border-color:rgba(124,255,176,.6); transform:translateY(-2px); }
 .brand-links .url{ color:var(--token); border-color:rgba(124,255,176,.4); }
+
+/* Contract-address chip (copyable) */
+.ca-chip{ display:inline-flex; align-items:center; gap:9px; height:38px; padding:0 12px 0 8px; border-radius:12px; cursor:pointer;
+  background:linear-gradient(180deg, rgba(12,30,48,.92), rgba(7,18,30,.92)); border:1px solid rgba(125,211,252,.3);
+  transition:border-color .2s, transform .12s; font-family:'Oswald',sans-serif; }
+.ca-chip:hover{ border-color:rgba(124,255,176,.6); } .ca-chip:active{ transform:translateY(1px); }
+.ca-chip.live{ border-color:rgba(124,255,176,.45); }
+.ca-chip .ca-lbl{ font-weight:800; font-size:11px; letter-spacing:.08em; color:#08231a; background:var(--token); padding:3px 7px; border-radius:7px; }
+.ca-chip .ca-val{ font-family:'Rajdhani',monospace; font-weight:700; font-size:13.5px; color:#eaf4ff; letter-spacing:.02em; }
+.ca-chip .ca-ico{ font-size:13px; color:var(--frost); }
+.ca-rail{ margin-top:16px; }
+/* mobile floating variant — a slim pill just under the HUD, over the map;
+   hidden on desktop (rail has it) and while a sub-screen is open (base only) */
+.ca-float{ position:fixed; left:50%; top:156px; transform:translateX(-50%); z-index:16; height:30px; padding:0 9px 0 5px;
+  background:linear-gradient(180deg, rgba(9,22,36,.96), rgba(6,14,24,.96)); box-shadow:0 6px 18px rgba(0,0,0,.5); }
+.ca-float .ca-lbl{ font-size:10px; padding:2px 6px; } .ca-float .ca-val{ font-size:12px; } .ca-float .ca-ico{ font-size:11px; }
+body.nv-screen-open .ca-float{ display:none; }
+@media (min-width:900px){ .ca-float{ display:none; } }
+@media (max-width:340px){ .ca-float .ca-val{ display:none; } }
