@@ -13,6 +13,7 @@
    calls; the renderer below does not change.
    ============================================================ */
 import * as CFG from "@nivar/config";
+import { Audio } from "./audio";
 
 export function initGame(): () => void {
   "use strict";
@@ -278,7 +279,7 @@ export function initGame(): () => void {
   function grant(rew) { for (const k in rew) { if (k === "crystalBig") S.crystal += CFG.CRYSTAL_BIG_AMOUNT; else S[k] += rew[k]; } }
   function rewText(rew) { return Object.keys(rew).map((k) => (k === "crystalBig" ? "💎" + CFG.CRYSTAL_BIG_AMOUNT.toLocaleString("en-US") : RICON[k] + " " + ab(rew[k]))).join("  "); }
   function claimQuest(cat, id) { const q = QUESTS[cat].find((x) => x.id === id); if (!q || !qClaimable(cat, q)) return;
-    claimed.add(cat + ":" + q.id); grant(q.rew); toast("Reward claimed · " + rewText(q.rew), "gold"); juiceClaim(); refresh(); renderQuests(); }
+    claimed.add(cat + ":" + q.id); grant(q.rew); Audio.sfx("reward"); toast("Reward claimed · " + rewText(q.rew), "gold"); juiceClaim(); refresh(); renderQuests(); }
   function claimChest(i) { if (dailyPoints() < CHESTS[i].p || chestClaimed.has(i)) return; chestClaimed.add(i); S.crystal += CHESTS[i].rew;
     toast("Daily chest · +" + CHESTS[i].rew + " 💎", "gold"); juiceClaim(); refresh(); renderQuests(); }
   function juiceClaim() { const fl = $("flash"); fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); }
@@ -360,9 +361,9 @@ export function initGame(): () => void {
   function startFurnace() { if (job) { toast("Builder busy", "gold"); return; } const c = furnaceCost(); if (!canPay(c)) { toast("Not enough resources", "gold"); return; }
     pay(c); const sec = CFG.buildSecsFurnace(S.furnace, bonuses().build) * 1000; job = { target: "furnace", kind: "furnace", endsAt: Date.now() + sec, total: sec }; closeSheet(); refresh(); coachFire("upgradeStarted"); }
   function speedUp() { if (!job) return; const rem = Math.max(0, job.endsAt - Date.now()); const price = CFG.speedupPrice(rem); if (S.crystal < price) { toast("Not enough $NIVAR", "gold"); return; } S.crystal -= price; job.endsAt = Date.now(); refresh(); }
-  function finishJob() { const id = job.target; if (id === "furnace") { S.furnace++; furnaceLevelUp(); } else { const b = byId(id); b.lv++; upgradedFlag = true; stats.upgrades++; dStats.upgrades++; toast(b.name + " → Lv " + b.lv, "good"); floatAt(b, "LEVEL UP!"); renderScene(); }
+  function finishJob() { const id = job.target; if (id === "furnace") { S.furnace++; furnaceLevelUp(); } else { const b = byId(id); b.lv++; upgradedFlag = true; stats.upgrades++; dStats.upgrades++; Audio.sfx("build"); toast(b.name + " → Lv " + b.lv, "good"); floatAt(b, "LEVEL UP!"); renderScene(); }
     job = null; S.popCap = shelterPopCap(); refresh(); }
-  function furnaceLevelUp() { S.crystal += CFG.overclockReward(S.furnace); S.popCap = shelterPopCap(); $("luNum").textContent = S.furnace;
+  function furnaceLevelUp() { Audio.sfx("level"); S.crystal += CFG.overclockReward(S.furnace); S.popCap = shelterPopCap(); $("luNum").textContent = S.furnace;
     const lu = $("levelup"); lu.classList.remove("go"); void lu.offsetWidth; lu.classList.add("go"); const fl = $("flash"); fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go");
     const base = w2s(FURNACE.gx, FURNACE.gy); const off = (FURNACE._top ? (isoOff(FURNACE.gx, FURNACE.gy).y - FURNACE._top.y) : 90);
     for (let k = 0; k < 46; k++) embers.push({ x: base.x, y: base.y - off, vx: Math.random() * 4 - 2, vy: -(Math.random() * 3 + .5), life: 1, r: Math.random() * 2 + 1 });
@@ -378,6 +379,7 @@ export function initGame(): () => void {
   const screen = $("screen"); let curScreen = "base";
   function setNav(name) { document.querySelectorAll(".nav").forEach((n) => n.classList.toggle("active", n.dataset.nav === name)); }
   function openScreen(name) {
+    Audio.sfx("click");
     if (name === "base") { curScreen = "base"; setNav("base"); screen.classList.remove("on"); return; }
     curScreen = name; setNav(name); $("scrBal").textContent = Math.floor(S.crystal).toLocaleString("en-US");
     const T = { heroes: "Heroes", raids: "Raids", research: "Research", shop: "Shop", quests: "Quests" }[name]; $("scrTitle").textContent = T;
@@ -428,7 +430,7 @@ export function initGame(): () => void {
     if (!owned) { S.heroes[h.id] = { level: 1, shards: 0 }; isNew = true; if (S.squad.length < 5) S.squad.push(h.id); } else owned.shards += 1; return { h, isNew }; }
   function pull(n) { const cost = CFG.summonCost(n); if (S.crystal < cost) { toast("Not enough $NIVAR", "gold"); return; } S.crystal -= cost; summonedFlag = true; stats.summons += n; dStats.summons += n;
     const res = []; for (let i = 0; i < n; i++) res.push(rollHero()); showSummon(res); refresh(); if (curScreen === "heroes") renderHeroes(); coachFire("pulled"); }
-  function showSummon(res) { const one = res.length === 1;
+  function showSummon(res) { Audio.sfx("summon"); const one = res.length === 1;
     const cards = res.map((x, i) => `<div class="pcard ${one ? "one" : ""}" style="border-color:${RCOL[x.h.rarity]};box-shadow:0 0 18px ${RCOL[x.h.rarity]}55;animation-delay:${i * 0.06}s">
       <div class="pe">${x.h.e}</div><div class="pn" style="color:${RCOL[x.h.rarity]}">${x.h.name}</div>${x.isNew ? '<div class="pnew">NEW!</div>' : '<div class="pdupe">+1 🧩</div>'}</div>`).join("");
     $("modalBody").innerHTML = `<div class="mcard"><div class="mtitle">SUMMON</div>
@@ -455,7 +457,7 @@ export function initGame(): () => void {
     $("scrBody").querySelectorAll("[data-raid]").forEach((el) => el.addEventListener("click", () => raid(STAGES.find((s) => s.id === el.dataset.raid))));
   }
   function raid(st) { const now = Date.now(); const cl = S.clears[st.id] || {}; if (cl.cd && now < cl.cd) { toast("On cooldown", "gold"); return; }
-    const eff = Math.round(squadPower() * bonuses().raid); const win = eff >= st.power;
+    const eff = Math.round(squadPower() * bonuses().raid); const win = eff >= st.power; Audio.sfx(win ? "win" : "lose");
     if (win) { const first = !cl.cleared; grantRaid(st, first); S.clears[st.id] = { cleared: true, cd: now + CFG.ECON.RAID_COOLDOWN_MS }; raidWonFlag = true; stats.raidWins++; dStats.raidWins++; showCombat(st, true, eff, first); }
     else showCombat(st, false, eff, false);
     refresh(); renderRaids(); }
@@ -552,6 +554,8 @@ export function initGame(): () => void {
   $("taskBar").addEventListener("click", (e) => { if (e.target.closest("#mailBtn")) return; openScreen("quests"); });
   _onResize = () => { fit(); initFlakes(); if (coachOn) coachLayout(); };
   window.addEventListener("resize", _onResize);
+  // start procedural music on the first user gesture (autoplay policy); idempotent
+  document.addEventListener("pointerdown", () => Audio.start());
 
   /* ---- coach / onboarding ---- */
   function navEl(n) { return document.querySelector('.nav[data-nav="' + n + '"]'); }
@@ -646,7 +650,7 @@ export function initGame(): () => void {
   boostFab.addEventListener("click", (e) => { e.stopPropagation(); const now = Date.now();
     if (now < boostCdUntil) { toast("Boost recharging…", "gold"); return; }
     boostUntil = now + CFG.ECON.BOOST_DURATION_MS; boostCdUntil = boostUntil + CFG.ECON.BOOST_COOLDOWN_MS;
-    shake(); juiceClaim(); const ft = w2s(FURNACE.gx, FURNACE.gy); burst(ft.x, ft.y - 40, 34, "#ffd66a");
+    shake(); juiceClaim(); Audio.sfx("boost"); const ft = w2s(FURNACE.gx, FURNACE.gy); burst(ft.x, ft.y - 40, 34, "#ffd66a");
     toast("⚡ OVERDRIVE — 2× production!", "gold"); });
   game.appendChild(boostFab);
   function updateBoostFab() { const now = Date.now();
@@ -670,7 +674,7 @@ export function initGame(): () => void {
     const el = document.createElement("button"); el.className = "collectible"; el.textContent = c.ic;
     el.style.left = cx + "px"; el.style.top = cy + "px"; collCount++;
     let taken = false;
-    const take = () => { if (taken) return; taken = true; S[c.res] += amt;
+    const take = () => { if (taken) return; taken = true; S[c.res] += amt; Audio.sfx("coin");
       popAt(cx, cy, "+" + ab(amt) + " " + c.ic, c.col); burst(cx, cy, 16, c.col);
       if (c.res === "crystal") juiceClaim(); el.remove(); collCount--; refresh(); };
     el.addEventListener("click", (e) => { e.stopPropagation(); take(); });
