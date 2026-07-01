@@ -14,6 +14,7 @@
    ============================================================ */
 import * as CFG from "@nivar/config";
 import { Audio } from "./audio";
+import { runBattle } from "./battle";
 
 export function initGame(): () => void {
   "use strict";
@@ -468,7 +469,16 @@ export function initGame(): () => void {
       for (const k in rewards) S[k] += rewards[k];
       S.clears[st.id] = { cleared: true, cd: now + CFG.ECON.RAID_COOLDOWN_MS, mlevel: mlevel + 1 };
       raidWonFlag = true; stats.raidWins++; dStats.raidWins++; }
-    showBattle(st, win, eff, epow, first, mlevel, rewards);
+    // Real-time 2D auto-battler arena (outcome is the power check above; the sim is flavor).
+    const squadUnits = S.squad.map((id) => ({ e: HERO(id).e, power: heroPower(id) })).filter((u) => u.power > 0);
+    const rewView = {}; for (const k in rewards) rewView[k] = { ic: RICON[k], amt: rewards[k] };
+    runBattle({
+      container: $("game"),
+      squad: squadUnits,
+      monster: { e: st.e, name: st.name, level: mlevel, power: epow, id: st.id },
+      win, eff, epow, rewards: rewView,
+      onDone: () => { refresh(); renderRaids(); },
+    });
     refresh(); renderRaids(); }
 
   // Animated squad-vs-monster battle (the outcome is the power check; this is flavor).

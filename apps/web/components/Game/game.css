@@ -371,6 +371,35 @@ b{ font-weight:700; }
 .blose{ font-family:'Oswald'; font-weight:700; font-size:26px; color:var(--bad); letter-spacing:.05em; }
 .bnote{ font-size:12px; color:var(--muted); line-height:1.4; margin:4px 0 8px; } .bnote b{ color:#eaf4ff; }
 
+/* ---------- 2D real-time auto-battler arena ---------- */
+.battle-arena{ position:absolute; inset:0; z-index:26; overflow:hidden;
+  border-radius:inherit; background:#0a1826; animation:baIn .28s ease; }
+@keyframes baIn{ from{ opacity:0 } to{ opacity:1 } }
+.battle-arena .ba-cv{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+.ba-top{ position:absolute; z-index:2; left:0; right:0; top:0; display:flex; align-items:center; gap:6px;
+  padding:10px 12px; background:linear-gradient(180deg, rgba(4,10,18,.85), rgba(4,10,18,0)); pointer-events:none; }
+.ba-team{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.ba-team.foe{ text-align:right; align-items:flex-end; }
+.ba-team b{ font-family:'Oswald',sans-serif; font-weight:700; font-size:12.5px; color:#eaf4ff; letter-spacing:.04em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.ba-team span{ font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; color:var(--token); }
+.ba-team.foe span{ color:#ff8a8a; }
+.ba-vs{ font-family:'Oswald',sans-serif; font-weight:700; font-size:11px; color:#ffe2a0; letter-spacing:.06em;
+  flex:none; padding:3px 9px; border-radius:9px; background:rgba(6,14,24,.72); border:1px solid rgba(125,211,252,.28); }
+.ba-ctrl{ position:absolute; z-index:2; right:10px; bottom:12px; display:flex; gap:8px; }
+.ba-btn{ width:44px; height:38px; border-radius:11px; cursor:pointer; font-family:'Oswald',sans-serif; font-weight:700; font-size:14px;
+  color:#eaf4ff; background:linear-gradient(180deg, rgba(12,30,48,.95), rgba(7,18,30,.95));
+  border:1px solid rgba(125,211,252,.4); box-shadow:0 5px 16px rgba(0,0,0,.4); transition:transform .1s, border-color .2s; }
+.ba-btn:hover{ border-color:rgba(124,255,176,.6); } .ba-btn:active{ transform:translateY(1px); }
+.ba-result{ position:absolute; z-index:3; inset:0; display:none; place-items:center; padding:20px;
+  background:radial-gradient(120% 80% at 50% 40%, rgba(4,10,18,.55), rgba(4,10,18,.9)); }
+.ba-result.on{ display:grid; animation:baIn .3s ease; }
+.ba-panel{ width:min(320px,90%); text-align:center; padding:22px 20px; border-radius:20px;
+  background:linear-gradient(180deg, rgba(16,36,56,.96), rgba(8,18,30,.98)); border:1px solid rgba(125,211,252,.3);
+  box-shadow:0 18px 50px rgba(0,0,0,.6); animation:baPop .34s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes baPop{ from{ transform:scale(.82); opacity:0 } to{ transform:scale(1); opacity:1 } }
+.ba-panel .bwin, .ba-panel .blose{ font-size:30px; }
+
 /* ---------- site chrome (not part of the prototype) ---------- */
 .x-social{ position:fixed; right:16px; bottom:16px; z-index:17; width:44px; height:44px; border-radius:13px;
   display:grid; place-items:center; text-decoration:none;
