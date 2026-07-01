@@ -386,6 +386,11 @@ b{ font-weight:700; }
 .ba-team.foe span{ color:#ff8a8a; }
 .ba-vs{ font-family:'Oswald',sans-serif; font-weight:700; font-size:11px; color:#ffe2a0; letter-spacing:.06em;
   flex:none; padding:3px 9px; border-radius:9px; background:rgba(6,14,24,.72); border:1px solid rgba(125,211,252,.28); }
+.ba-exit{ position:absolute; z-index:2; right:10px; top:52px; height:32px; padding:0 12px; border-radius:10px; cursor:pointer;
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; letter-spacing:.05em; color:#ffd0d0;
+  background:linear-gradient(180deg, rgba(60,20,26,.9), rgba(30,12,16,.92)); border:1px solid rgba(255,120,120,.4);
+  box-shadow:0 4px 14px rgba(0,0,0,.4); transition:transform .1s, border-color .2s; }
+.ba-exit:hover{ border-color:rgba(255,140,140,.75); } .ba-exit:active{ transform:translateY(1px); }
 .ba-ctrl{ position:absolute; z-index:2; right:10px; bottom:12px; display:flex; gap:8px; }
 .ba-btn{ width:44px; height:38px; border-radius:11px; cursor:pointer; font-family:'Oswald',sans-serif; font-weight:700; font-size:14px;
   color:#eaf4ff; background:linear-gradient(180deg, rgba(12,30,48,.95), rgba(7,18,30,.95));

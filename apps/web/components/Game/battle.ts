@@ -15,7 +15,7 @@ function ab(n) { n = Math.floor(n);
   return "" + n; }
 
 export function runBattle(opts) {
-  const { container, squad, monster, win, eff, epow, rewards, onDone } = opts;
+  const { container, squad, monster, win, eff, epow, rewards, onDone, onUpgrade } = opts;
   const DPR = Math.min(2, window.devicePixelRatio || 1);
 
   const wrap = document.createElement("div");
@@ -27,6 +27,7 @@ export function runBattle(opts) {
        <div class="ba-vs">Lv ${monster.level} · VS</div>
        <div class="ba-team foe"><b>${monster.name}</b><span>🛡️ ${ab(epow)}</span></div>
      </div>
+     <button class="ba-exit" data-a="exit">✕ EXIT</button>
      <div class="ba-ctrl">
        <button class="ba-btn" data-a="pause">⏸</button>
        <button class="ba-btn" data-a="speed">1×</button>
@@ -43,55 +44,65 @@ export function runBattle(opts) {
   function shade(hex, f) { const n = parseInt(hex.slice(1), 16);
     const r = Math.min(255, Math.round(((n >> 16) & 255) * f)), gg = Math.min(255, Math.round(((n >> 8) & 255) * f)), b = Math.min(255, Math.round((n & 255) * f));
     return "#" + ((1 << 24) + (r << 16) + (gg << 8) + b).toString(16).slice(1); }
+  function hslHex(h, s, l) { s /= 100; l /= 100; const a = s * Math.min(l, 1 - l);
+    const f = (n) => { const k = (n + h / 30) % 12; const c = l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)));
+      return Math.round(255 * c).toString(16).padStart(2, "0"); };
+    return "#" + f(0) + f(8) + f(4); }
+  function hueOf(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 33 + str.charCodeAt(i)) % 360; return h; }
+  // Each hero gets its own colour (from its emoji) so no two look the same,
+  // while friendly silhouette (helmet + smile) still reads as "your side".
+  function heroPal(emoji) { const h = hueOf(emoji);
+    return { armor: hslHex(h, 62, 44), armorL: hslHex(h, 88, 66), skin: "#eafff5", stroke: hslHex(h, 60, 12), foe: false, weapon: "staff" }; }
 
   /* ---------------- build units ---------------- */
-  const units = [], shots = [], parts = [];
+  const units = [], shots = [], parts = [], dmgs = [], rings = [];
   const bias = 1.5; // predetermined winner's stat multiplier
   const HPF = 2.6, ATKF = 0.14;
   const heroes = (squad.length ? squad : [{ e: "🫥", power: 40 }]);
-  // per-kind character palette — armor (body), skin (face), stroke, foe flag
   const PAL = {
-    hero: { armor: "#2aa870", armorL: "#9bffc6", skin: "#eafff5", stroke: "#0c2a1e", foe: false, weapon: "staff" },
     crew: { armor: "#1f6048", armorL: "#63d6a0", skin: "#dff3e8", stroke: "#0c2a1e", foe: false, weapon: "sword" },
     minion: { armor: shade(foeGlow, 0.5), armorL: shade(foeGlow, 1.05), skin: shade(foeGlow, 1.18), stroke: "#1a0608", foe: true, weapon: "club" },
     boss: { armor: shade(foeGlow, 0.45), armorL: shade(foeGlow, 1.3), skin: shade(foeGlow, 1.14), stroke: "#140406", foe: true, weapon: "club" },
   };
 
-  function mk(side, emoji, power, x, y, ranged, kind) {
+  function mk(side, emoji, power, x, y, ranged, kind, pal, emblem) {
     const boost = (side === "you") === win ? bias : 1;
     const big = kind === "boss";
     const hp = Math.max(20, power * HPF * boost);
     units.push({ side, e: emoji, r: big ? 34 : ranged ? 22 : 19, hp, maxHp: hp, atk: Math.max(3, power * ATKF * boost),
       range: ranged ? 128 : 34, speed: (ranged ? 30 : 46) + Math.random() * 6, cd: Math.random() * 0.6, cdMax: ranged ? 0.9 : 0.7,
-      ranged, x, y, flash: 0, alive: true, big, kind, pal: PAL[kind], step: Math.random() * 6.28 }); }
+      ranged, x, y, flash: 0, lunge: 0, alive: true, big, kind, pal, emblem, step: Math.random() * 6.28 }); }
 
-  // your side (left) — heroes (ranged, 60% power) form a back line, crew (melee, 40%) up front
+  // your side (left) — each hero unique (ranged, 60% power) + a melee crew (40%)
   const yourHeroPow = eff * 0.6 / heroes.length;
   const hSpread = Math.min(0.13, 0.62 / heroes.length);
-  heroes.forEach((h, i) => mk("you", h.e, yourHeroPow, W * 0.20, H * (0.5 - (heroes.length - 1) * hSpread / 2 + i * hSpread), true, "hero"));
+  heroes.forEach((h, i) => mk("you", h.e, yourHeroPow, W * 0.20, H * (0.5 - (heroes.length - 1) * hSpread / 2 + i * hSpread), true, "hero", heroPal(h.e), h.e));
   const crewN = 3, crewPow = eff * 0.4 / crewN;
-  for (let i = 0; i < crewN; i++) mk("you", "🥷", crewPow, W * 0.11, H * (0.34 + i * 0.16), false, "crew");
+  for (let i = 0; i < crewN; i++) mk("you", "🥷", crewPow, W * 0.11, H * (0.34 + i * 0.16), false, "crew", PAL.crew, null);
   // enemy side (right) — boss (50%) + a minion line (50%)
-  mk("foe", monster.e, epow * 0.5, W * 0.80, H * 0.46, false, "boss");
+  mk("foe", monster.e, epow * 0.5, W * 0.80, H * 0.46, false, "boss", PAL.boss, null);
   const minN = 5, minPow = epow * 0.5 / minN;
-  for (let i = 0; i < minN; i++) mk("foe", "👾", minPow, W * 0.89, H * (0.24 + i * 0.13), Math.random() < 0.35, "minion");
+  for (let i = 0; i < minN; i++) mk("foe", "👾", minPow, W * 0.89, H * (0.24 + i * 0.13), Math.random() < 0.35, "minion", PAL.minion, null);
 
   /* ---------------- sim ---------------- */
   function nearest(u) { let best = null, bd = 1e9;
     for (const o of units) { if (!o.alive || o.side === u.side) continue; const d = (o.x - u.x) ** 2 + (o.y - u.y) ** 2; if (d < bd) { bd = d; best = o; } }
     return best; }
-  function hurt(u, dmg) { u.hp -= dmg; u.flash = 1; burst(u.x, u.y, 4, u.side === "you" ? "#9fd0ff" : "#ffb0b0");
-    if (u.hp <= 0 && u.alive) { u.alive = false; burst(u.x, u.y, 12, u.big ? foeGlow : "#dfe9f5"); } }
-  function burst(x, y, n, c) { for (let i = 0; i < n; i++) parts.push({ x, y, vx: Math.random() * 3 - 1.5, vy: Math.random() * 3 - 1.5, life: 1, r: Math.random() * 2 + 1, c }); }
+  function hurt(u, dmg) { u.hp -= dmg; u.flash = 1;
+    burst(u.x, u.y - u.r * 0.4, 5, u.side === "you" ? "#9fd0ff" : "#ffd0a0");
+    rings.push({ x: u.x, y: u.y - u.r * 0.4, life: 1, max: u.r * 1.4 });
+    dmgs.push({ x: u.x + (Math.random() * 10 - 5), y: u.y - u.r * 1.1, val: Math.round(dmg), life: 1, foe: u.side === "foe" });
+    if (u.hp <= 0 && u.alive) { u.alive = false; burst(u.x, u.y, 14, u.big ? foeGlow : "#dfe9f5"); rings.push({ x: u.x, y: u.y - u.r * 0.4, life: 1, max: u.r * 2.6 }); } }
+  function burst(x, y, n, c) { for (let i = 0; i < n; i++) parts.push({ x, y, vx: Math.random() * 3.4 - 1.7, vy: Math.random() * 3.4 - 2, life: 1, r: Math.random() * 2.4 + 1, c }); }
 
   function step(dt) {
-    for (const u of units) { if (!u.alive) continue; u.flash = Math.max(0, u.flash - dt * 4);
+    for (const u of units) { if (!u.alive) continue; u.flash = Math.max(0, u.flash - dt * 4); u.lunge = Math.max(0, u.lunge - dt * 4.5);
       const t = nearest(u); if (!t) continue;
       const dx = t.x - u.x, dy = t.y - u.y, dist = Math.hypot(dx, dy) || 1;
       if (dist > u.range) { u.x += dx / dist * u.speed * dt; u.y += dy / dist * u.speed * dt; }
-      else { u.cd -= dt; if (u.cd <= 0) { u.cd = u.cdMax;
-        if (u.ranged) { shots.push({ x: u.x, y: u.y, t, dmg: u.atk, col: u.side === "you" ? "#7CFFB0" : foeGlow, side: u.side, sp: 320 }); }
-        else { hurt(t, u.atk); u.x -= dx / dist * 5; setTimeout(() => {}, 0); }
+      else { u.cd -= dt; if (u.cd <= 0) { u.cd = u.cdMax; u.lunge = 1;
+        if (u.ranged) { shots.push({ x: u.x, y: u.y - u.r * 0.4, px: u.x, py: u.y - u.r * 0.4, t, dmg: u.atk, col: u.side === "you" ? "#7CFFB0" : foeGlow, side: u.side, sp: 340 }); }
+        else { hurt(t, u.atk); }
       } } }
     // separation — units push apart so they form readable lines instead of piling up
     for (let i = 0; i < units.length; i++) { const a = units[i]; if (!a.alive) continue;
@@ -100,20 +111,25 @@ export function runBattle(opts) {
         if (d < min) { const p = (min - d) / d * 0.5; a.x -= dx * p; a.y -= dy * p; b.x += dx * p; b.y += dy * p; } } }
     for (const u of units) { u.x = Math.max(u.r, Math.min(W - u.r, u.x)); u.y = Math.max(u.r + 30, Math.min(H - u.r - 10, u.y)); }
     for (let i = shots.length - 1; i >= 0; i--) { const s = shots[i]; if (!s.t.alive) { shots.splice(i, 1); continue; }
-      const dx = s.t.x - s.x, dy = s.t.y - s.y, d = Math.hypot(dx, dy) || 1;
-      if (d < 10) { hurt(s.t, s.dmg); shots.splice(i, 1); continue; }
-      s.x += dx / d * s.sp * dt; s.y += dy / d * s.sp * dt; }
-    for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 1.6; if (p.life <= 0) parts.splice(i, 1); }
+      const tx = s.t.x, ty = s.t.y - s.t.r * 0.4, dx = tx - s.x, dy = ty - s.y, d = Math.hypot(dx, dy) || 1;
+      if (d < 12) { hurt(s.t, s.dmg); shots.splice(i, 1); continue; }
+      s.px = s.x; s.py = s.y; s.x += dx / d * s.sp * dt; s.y += dy / d * s.sp * dt; }
+    for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.x += p.vx; p.y += p.vy; p.vy += dt * 4; p.life -= dt * 1.6; if (p.life <= 0) parts.splice(i, 1); }
+    for (let i = dmgs.length - 1; i >= 0; i--) { const d = dmgs[i]; d.y -= dt * 34; d.life -= dt * 1.3; if (d.life <= 0) dmgs.splice(i, 1); }
+    for (let i = rings.length - 1; i >= 0; i--) { const r = rings[i]; r.life -= dt * 3.2; if (r.life <= 0) rings.splice(i, 1); }
   }
   function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
   // A drawn chibi fighter: legs, torso, arms + weapon, head with a real face
   // (eyes, brows, mouth), horns for monsters, a helmet crest for your troops.
   function drawChar(u) {
-    const s = u.r, cx = u.x, cy = u.y, p = u.pal, f = u.side === "you" ? 1 : -1;
+    const s = u.r, p = u.pal, f = u.side === "you" ? 1 : -1;
     const bob = Math.sin(u.step + elapsed * 3) * s * 0.05;
+    const cx = u.x + f * u.lunge * s * 0.5, cy = u.y; // lunge forward when attacking
     const hy = cy - s * 0.6 + bob, hr = s * 0.72;
-    // shadow
-    ctx.fillStyle = "rgba(12,26,40,.26)"; ctx.beginPath(); ctx.ellipse(cx, cy + s * 1.02, s * 0.9, s * 0.32, 0, 0, 7); ctx.fill();
+    // team ring on the ground (mint = ally, red = foe) + shadow
+    ctx.fillStyle = "rgba(12,26,40,.26)"; ctx.beginPath(); ctx.ellipse(u.x, cy + s * 1.02, s * 0.9, s * 0.32, 0, 0, 7); ctx.fill();
+    ctx.lineWidth = 2.4; ctx.strokeStyle = u.side === "you" ? "rgba(124,255,176,.85)" : "rgba(255,107,107,.8)";
+    ctx.beginPath(); ctx.ellipse(u.x, cy + s * 1.02, s * 0.86, s * 0.3, 0, 0, 7); ctx.stroke();
     ctx.lineWidth = u.big ? 3 : 2; ctx.strokeStyle = p.stroke; ctx.lineJoin = "round"; ctx.lineCap = "round";
     // legs
     ctx.fillStyle = shade(p.armor, 0.78);
@@ -125,8 +141,12 @@ export function runBattle(opts) {
     // torso
     const bg = ctx.createLinearGradient(0, cy - s * 0.25 + bob, 0, cy + s * 0.6 + bob); bg.addColorStop(0, p.armorL); bg.addColorStop(1, p.armor);
     rr(cx - s * 0.6, cy - s * 0.2 + bob, s * 1.2, s * 0.92, s * 0.4); ctx.fillStyle = bg; ctx.fill(); ctx.stroke();
-    // chest emblem
-    ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.beginPath(); ctx.arc(cx, cy + s * 0.18 + bob, s * 0.15, 0, 7); ctx.fill();
+    // chest emblem — hero's own badge (keeps identity without an emoji "face")
+    if (u.emblem) { const ey0 = cy + s * 0.22 + bob; ctx.fillStyle = "#f4fbff"; ctx.beginPath(); ctx.arc(cx, ey0, s * 0.3, 0, 7); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = p.armorL; ctx.stroke();
+      ctx.font = (s * 0.42) + "px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(u.emblem, cx, ey0 + 1);
+      ctx.lineWidth = u.big ? 3 : 2; ctx.strokeStyle = p.stroke;
+    } else { ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.beginPath(); ctx.arc(cx, cy + s * 0.18 + bob, s * 0.15, 0, 7); ctx.fill(); }
     // front arm + weapon (on the side facing the enemy)
     const ax = cx + f * s * 0.6;
     drawWeapon(u, ax, cy + s * 0.12 + bob, f, s, p);
@@ -185,9 +205,20 @@ export function runBattle(opts) {
     // units sorted by y (painter's order) — rendered as standing characters
     const alive = units.filter((u) => u.alive).sort((a, b) => a.y - b.y);
     for (const u of alive) drawChar(u);
-    for (const s of shots) { ctx.fillStyle = s.col; ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, 7); ctx.fill();
-      ctx.globalAlpha = .4; ctx.beginPath(); ctx.arc(s.x, s.y, 7, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    // projectiles with a motion trail
+    for (const s of shots) { ctx.strokeStyle = s.col; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.globalAlpha = .5;
+      ctx.beginPath(); ctx.moveTo(s.px, s.py); ctx.lineTo(s.x, s.y); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(s.x, s.y, 3, 0, 7); ctx.fill();
+      ctx.globalAlpha = .35; ctx.fillStyle = s.col; ctx.beginPath(); ctx.arc(s.x, s.y, 8, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    // impact rings
+    for (const r of rings) { ctx.globalAlpha = Math.max(0, r.life) * 0.6; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(r.x, r.y, r.max * (1 - r.life) + 3, 0, 7); ctx.stroke(); } ctx.globalAlpha = 1;
     for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
+    // floating damage numbers
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 3; ctx.strokeStyle = "rgba(4,10,18,.7)";
+    for (const d of dmgs) { ctx.globalAlpha = Math.max(0, Math.min(1, d.life * 1.4)); const sz = d.foe ? 17 : 14;
+      ctx.font = "800 " + sz + "px Oswald, system-ui"; ctx.fillStyle = d.foe ? "#ffe27a" : "#ff8a8a";
+      ctx.strokeText(d.val, d.x, d.y); ctx.fillText(d.val, d.x, d.y); } ctx.globalAlpha = 1;
   }
 
   /* ---------------- loop + controls ---------------- */
@@ -203,6 +234,7 @@ export function runBattle(opts) {
   const btnP = wrap.querySelector('[data-a="pause"]'), btnS = wrap.querySelector('[data-a="speed"]');
   btnP.addEventListener("click", () => { paused = !paused; btnP.textContent = paused ? "▶" : "⏸"; });
   btnS.addEventListener("click", () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; btnS.textContent = speed + "×"; });
+  wrap.querySelector('[data-a="exit"]').addEventListener("click", () => { if (ended) close(); else finish(); });
   const onResize = () => fit(); window.addEventListener("resize", onResize);
 
   function finish() {
@@ -211,13 +243,16 @@ export function runBattle(opts) {
     const res = wrap.querySelector(".ba-result");
     res.innerHTML = `<div class="ba-panel">
       <div class="${win ? "bwin" : "blose"}">${win ? "VICTORY" : "DEFEAT"}</div>
-      <div class="bnote">${win ? "Loot secured — the monster levels up next time." : "Squad wiped. Summon &amp; level up heroes, then try again."}</div>
+      <div class="bnote">${win ? "Loot secured — the monster levels up next time." : "Squad wiped. Level up your heroes, then try again."}</div>
       ${win ? `<div class="rewbox">${rewHtml}</div>` : ""}
-      <button class="bigbtn ${win ? "" : "alt"}" data-a="done">${win ? "COLLECT" : "BACK"}</button></div>`;
+      <button class="bigbtn ${win ? "" : "alt"}" data-a="done">${win ? "COLLECT" : "BACK"}</button>
+      ${onUpgrade ? `<button class="bigbtn up" data-a="upgrade" style="margin-top:8px">⬆ UPGRADE HEROES</button>` : ""}</div>`;
     res.classList.add("on");
     res.querySelector('[data-a="done"]').addEventListener("click", close);
+    const up = res.querySelector('[data-a="upgrade"]'); if (up) up.addEventListener("click", () => { close(); onUpgrade(); });
   }
-  function close() { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); wrap.remove(); if (onDone) onDone(); }
+  function close() { if (closed) return; closed = true; cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); wrap.remove(); if (onDone) onDone(); }
+  let closed = false;
 
   return close;
 }

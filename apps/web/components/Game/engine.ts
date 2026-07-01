@@ -478,6 +478,7 @@ export function initGame(): () => void {
       monster: { e: st.e, name: st.name, level: mlevel, power: epow, id: st.id },
       win, eff, epow, rewards: rewView,
       onDone: () => { refresh(); renderRaids(); },
+      onUpgrade: () => openScreen("heroes"),
     });
     refresh(); renderRaids(); }
 
