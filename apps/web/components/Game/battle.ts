@@ -49,12 +49,12 @@ export function runBattle(opts) {
   const bias = 1.5; // predetermined winner's stat multiplier
   const HPF = 2.6, ATKF = 0.14;
   const heroes = (squad.length ? squad : [{ e: "🫥", power: 40 }]);
-  // per-kind body palette (light top → dark bottom, stroke)
+  // per-kind character palette — armor (body), skin (face), stroke, foe flag
   const PAL = {
-    hero: { l: "#9bffc6", d: "#2aa870", s: "#7CFFB0" },
-    crew: { l: "#72cfa2", d: "#22694d", s: "#57e0a0" },
-    boss: { l: shade(foeGlow, 1.28), d: shade(foeGlow, 0.55), s: foeGlow },
-    minion: { l: "#ff9d9d", d: "#a83232", s: "#ff6b6b" },
+    hero: { armor: "#2aa870", armorL: "#9bffc6", skin: "#eafff5", stroke: "#0c2a1e", foe: false, weapon: "staff" },
+    crew: { armor: "#1f6048", armorL: "#63d6a0", skin: "#dff3e8", stroke: "#0c2a1e", foe: false, weapon: "sword" },
+    minion: { armor: shade(foeGlow, 0.5), armorL: shade(foeGlow, 1.05), skin: shade(foeGlow, 1.18), stroke: "#1a0608", foe: true, weapon: "club" },
+    boss: { armor: shade(foeGlow, 0.45), armorL: shade(foeGlow, 1.3), skin: shade(foeGlow, 1.14), stroke: "#140406", foe: true, weapon: "club" },
   };
 
   function mk(side, emoji, power, x, y, ranged, kind) {
@@ -106,24 +106,76 @@ export function runBattle(opts) {
     for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 1.6; if (p.life <= 0) parts.splice(i, 1); }
   }
   function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  // A drawn chibi fighter: legs, torso, arms + weapon, head with a real face
+  // (eyes, brows, mouth), horns for monsters, a helmet crest for your troops.
   function drawChar(u) {
-    const s = u.r, hy = u.y - s * 0.5, hr = s * 0.66;
-    const bw = s * 1.5, bh = s * 1.45, bx = u.x - bw / 2, by = u.y - s * 0.12;
-    // ground shadow
-    ctx.fillStyle = "rgba(12,26,40,.26)"; ctx.beginPath(); ctx.ellipse(u.x, u.y + s * 0.95, s * 0.86, s * 0.32, 0, 0, 7); ctx.fill();
-    // body capsule
-    const g = ctx.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, u.pal.l); g.addColorStop(1, u.pal.d);
-    rr(bx, by, bw, bh, s * 0.55); ctx.fillStyle = g; ctx.fill();
-    ctx.lineWidth = u.big ? 3.5 : 2.4; ctx.strokeStyle = u.pal.s; ctx.stroke();
-    // head + face
-    ctx.beginPath(); ctx.arc(u.x, hy, hr, 0, 7); ctx.fillStyle = "#0d1a28"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = u.pal.s; ctx.stroke();
-    ctx.font = (hr * 1.55) + "px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(u.e, u.x, hy + 1);
-    // hit flash
-    if (u.flash > 0) { ctx.globalAlpha = u.flash * 0.85; ctx.fillStyle = "#fff"; rr(bx, by, bw, bh, s * 0.55); ctx.fill(); ctx.beginPath(); ctx.arc(u.x, hy, hr, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    const s = u.r, cx = u.x, cy = u.y, p = u.pal, f = u.side === "you" ? 1 : -1;
+    const bob = Math.sin(u.step + elapsed * 3) * s * 0.05;
+    const hy = cy - s * 0.6 + bob, hr = s * 0.72;
+    // shadow
+    ctx.fillStyle = "rgba(12,26,40,.26)"; ctx.beginPath(); ctx.ellipse(cx, cy + s * 1.02, s * 0.9, s * 0.32, 0, 0, 7); ctx.fill();
+    ctx.lineWidth = u.big ? 3 : 2; ctx.strokeStyle = p.stroke; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    // legs
+    ctx.fillStyle = shade(p.armor, 0.78);
+    rr(cx - s * 0.46, cy + s * 0.42 + bob, s * 0.38, s * 0.5, s * 0.16); ctx.fill(); ctx.stroke();
+    rr(cx + s * 0.08, cy + s * 0.42 + bob, s * 0.38, s * 0.5, s * 0.16); ctx.fill(); ctx.stroke();
+    // back arm
+    ctx.fillStyle = p.armor;
+    rr(cx - f * s * 0.72 - s * 0.13, cy - s * 0.06 + bob, s * 0.26, s * 0.56, s * 0.13); ctx.fill(); ctx.stroke();
+    // torso
+    const bg = ctx.createLinearGradient(0, cy - s * 0.25 + bob, 0, cy + s * 0.6 + bob); bg.addColorStop(0, p.armorL); bg.addColorStop(1, p.armor);
+    rr(cx - s * 0.6, cy - s * 0.2 + bob, s * 1.2, s * 0.92, s * 0.4); ctx.fillStyle = bg; ctx.fill(); ctx.stroke();
+    // chest emblem
+    ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.beginPath(); ctx.arc(cx, cy + s * 0.18 + bob, s * 0.15, 0, 7); ctx.fill();
+    // front arm + weapon (on the side facing the enemy)
+    const ax = cx + f * s * 0.6;
+    drawWeapon(u, ax, cy + s * 0.12 + bob, f, s, p);
+    ctx.fillStyle = shade(p.armor, 1.08);
+    rr(cx + f * s * 0.47 - s * 0.13, cy - s * 0.06 + bob, s * 0.26, s * 0.56, s * 0.13); ctx.fill(); ctx.stroke();
+    // horns (monsters) behind the head
+    if (p.foe) { ctx.fillStyle = shade(p.skin, 0.72);
+      ctx.beginPath(); ctx.moveTo(cx - hr * 0.62, hy - hr * 0.55); ctx.lineTo(cx - hr * 1.02, hy - hr * 1.45); ctx.lineTo(cx - hr * 0.12, hy - hr * 0.82); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + hr * 0.62, hy - hr * 0.55); ctx.lineTo(cx + hr * 1.02, hy - hr * 1.45); ctx.lineTo(cx + hr * 0.12, hy - hr * 0.82); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    // head
+    ctx.beginPath(); ctx.arc(cx, hy, hr, 0, 7); ctx.fillStyle = p.skin; ctx.fill(); ctx.stroke();
+    // helmet crest (your troops) — a coloured cap over the top of the head
+    if (!p.foe) { ctx.fillStyle = p.armor; ctx.beginPath(); ctx.arc(cx, hy, hr, Math.PI * 1.02, Math.PI * 1.98); ctx.arc(cx, hy - hr * 0.1, hr * 0.9, Math.PI * 1.98, Math.PI * 1.02, true); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, hy - hr * 1.02); ctx.lineTo(cx, hy - hr * 1.5); ctx.stroke(); ctx.fillStyle = p.armorL; ctx.beginPath(); ctx.arc(cx, hy - hr * 1.5, hr * 0.16, 0, 7); ctx.fill(); }
+    // face — eyes
+    const ex = hr * 0.36, ey = hy + hr * 0.02, er = hr * 0.22;
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx - ex, ey, er, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(cx + ex, ey, er, 0, 7); ctx.fill();
+    ctx.fillStyle = "#0e1a20"; const pj = f * er * 0.32;
+    ctx.beginPath(); ctx.arc(cx - ex + pj, ey + er * 0.1, er * 0.56, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(cx + ex + pj, ey + er * 0.1, er * 0.56, 0, 7); ctx.fill();
+    // brows
+    ctx.strokeStyle = p.stroke; ctx.lineWidth = Math.max(1.6, s * 0.085);
+    if (p.foe) { ctx.beginPath(); ctx.moveTo(cx - ex * 1.5, ey - er * 1.25); ctx.lineTo(cx - ex * 0.35, ey - er * 0.35); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + ex * 1.5, ey - er * 1.25); ctx.lineTo(cx + ex * 0.35, ey - er * 0.35); ctx.stroke(); }
+    // mouth
+    ctx.lineWidth = Math.max(1.6, s * 0.075);
+    if (p.foe) { ctx.beginPath(); ctx.arc(cx, hy + hr * 0.62, hr * 0.32, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+      ctx.fillStyle = "#fff"; // fangs
+      ctx.beginPath(); ctx.moveTo(cx - hr * 0.2, hy + hr * 0.4); ctx.lineTo(cx - hr * 0.1, hy + hr * 0.66); ctx.lineTo(cx - hr * 0.3, hy + hr * 0.5); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx + hr * 0.2, hy + hr * 0.4); ctx.lineTo(cx + hr * 0.1, hy + hr * 0.66); ctx.lineTo(cx + hr * 0.3, hy + hr * 0.5); ctx.closePath(); ctx.fill();
+    } else { ctx.beginPath(); ctx.arc(cx, hy + hr * 0.34, hr * 0.28, Math.PI * 0.12, Math.PI * 0.88); ctx.stroke(); }
+    // hit flash over the whole figure
+    if (u.flash > 0) { ctx.globalAlpha = u.flash * 0.7; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, hy, hr, 0, 7); ctx.fill(); rr(cx - s * 0.6, cy - s * 0.2 + bob, s * 1.2, s * 0.92, s * 0.4); ctx.fill(); ctx.globalAlpha = 1; }
     // hp bar
-    const barW = bw, hpp = Math.max(0, u.hp / u.maxHp), byy = u.y - s * 1.3;
-    ctx.fillStyle = "rgba(4,10,18,.85)"; rr(u.x - barW / 2, byy, barW, 5, 2.5); ctx.fill();
-    ctx.fillStyle = u.side === "you" ? "#7CFFB0" : "#ff6b6b"; rr(u.x - barW / 2, byy, barW * hpp, 5, 2.5); ctx.fill();
+    const barW = s * 1.5, hpp = Math.max(0, u.hp / u.maxHp), byy = cy - s * 1.55 + bob;
+    ctx.fillStyle = "rgba(4,10,18,.85)"; rr(cx - barW / 2, byy, barW, 5, 2.5); ctx.fill();
+    ctx.fillStyle = u.side === "you" ? "#7CFFB0" : "#ff6b6b"; rr(cx - barW / 2, byy, barW * hpp, 5, 2.5); ctx.fill();
+  }
+  function drawWeapon(u, x, y, f, s, p) {
+    ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.lineWidth = Math.max(2, s * 0.13); ctx.strokeStyle = p.stroke;
+    if (p.weapon === "staff") { ctx.strokeStyle = "#caa46a"; ctx.beginPath(); ctx.moveTo(x, y + s * 0.5); ctx.lineTo(x + f * s * 0.05, y - s * 0.55); ctx.stroke();
+      ctx.fillStyle = "#7CFFB0"; ctx.beginPath(); ctx.arc(x + f * s * 0.05, y - s * 0.62, s * 0.2, 0, 7); ctx.fill();
+      ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(x + f * s * 0.05, y - s * 0.62, s * 0.34, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+    } else if (p.weapon === "sword") { ctx.strokeStyle = "#cdd8e6"; ctx.beginPath(); ctx.moveTo(x - f * s * 0.1, y + s * 0.45); ctx.lineTo(x + f * s * 0.3, y - s * 0.6); ctx.stroke();
+      ctx.strokeStyle = "#8a5a2b"; ctx.lineWidth = Math.max(2, s * 0.16); ctx.beginPath(); ctx.moveTo(x - f * s * 0.28, y + s * 0.28); ctx.lineTo(x + f * s * 0.08, y + s * 0.44); ctx.stroke();
+    } else { ctx.strokeStyle = shade(p.skin, 0.6); ctx.beginPath(); ctx.moveTo(x - f * s * 0.05, y + s * 0.45); ctx.lineTo(x + f * s * 0.28, y - s * 0.4); ctx.stroke();
+      ctx.fillStyle = shade(p.armor, 0.85); ctx.beginPath(); ctx.arc(x + f * s * 0.3, y - s * 0.46, s * 0.22, 0, 7); ctx.fill(); ctx.stroke();
+      for (let k = 0; k < 4; k++) { const a = k / 4 * 6.28; ctx.beginPath(); ctx.moveTo(x + f * s * 0.3, y - s * 0.46); ctx.lineTo(x + f * s * 0.3 + Math.cos(a) * s * 0.34, y - s * 0.46 + Math.sin(a) * s * 0.34); ctx.stroke(); } }
+    ctx.restore();
   }
 
   function draw() {
