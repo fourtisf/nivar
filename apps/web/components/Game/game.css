@@ -14,9 +14,8 @@ button:focus-visible{ outline:2px solid var(--frost); outline-offset:1px; }
 b{ font-weight:700; }
 ::-webkit-scrollbar{ width:0; height:0; }
 
-#game{ position:relative; width:min(100vw,480px); height:min(100dvh,940px);
+#game{ position:relative; width:100vw; height:100dvh;
   overflow:hidden; background:#9fb8cf; box-shadow:0 30px 90px rgba(0,0,0,.6); touch-action:none; }
-@media (min-width:520px){ #game{ border-radius:24px; } }
 #world{ position:absolute; inset:0; z-index:1; }
 #overlay{ position:absolute; inset:0; z-index:2; pointer-events:none; }
 
@@ -312,3 +311,26 @@ b{ font-weight:700; }
 .qcmark .cb2.ready{ background:linear-gradient(180deg,#ffce54,#f0a91a); color:#3a2a08; animation:pulseC 1.2s ease-in-out infinite; }
 .qcmark .cb2.got{ opacity:.45; }
 @keyframes pulseC{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,206,84,.55) } 50%{ box-shadow:0 0 0 7px rgba(255,206,84,0) } }
+
+/* ---------- site chrome (not part of the prototype) ---------- */
+.x-social{ position:fixed; right:16px; bottom:16px; z-index:17; width:44px; height:44px; border-radius:13px;
+  display:grid; place-items:center; text-decoration:none;
+  background:linear-gradient(180deg, rgba(12,30,48,.95), rgba(7,18,30,.95));
+  border:1px solid rgba(125,211,252,.35); box-shadow:0 6px 20px rgba(0,0,0,.45); transition:transform .12s ease, border-color .2s; }
+.x-social:hover{ transform:translateY(-2px); border-color:rgba(124,255,176,.6); }
+.x-social:active{ transform:translateY(0); }
+.x-social svg{ width:21px; height:21px; fill:#eaf4ff; }
+@media (max-width:540px){ .x-social{ bottom:120px; right:12px; width:40px; height:40px; } .x-social svg{ width:19px; height:19px; } }
+
+/* ---------- desktop: full-screen map, controls stay in a centered 480px column ----------
+   (#game-scoped so these win over the base .hud/.task-bar/.bottom-nav rules) */
+@media (min-width:520px){
+  #game > .hud-top{ left:calc(50% - 240px); right:calc(50% - 240px); }
+  #game > .left-cards{ left:calc(50% - 232px); }
+  #game > .right-rail{ right:calc(50% - 234px); }
+  #game > .task-bar{ left:calc(50% - 232px); right:calc(50% - 232px); }
+  #game > .bottom-nav{ left:calc(50% - 240px); right:calc(50% - 240px);
+    border-left:1px solid rgba(125,211,252,.12); border-right:1px solid rgba(125,211,252,.12); }
+  #game > .hintdrag{ bottom:132px; }
+  #screen .scr-head, #screen .scr-body{ width:480px; margin-left:auto; margin-right:auto; }
+}
